@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Solace (Hyprland)
-Comment=Solace Hyprland session
-Exec=dbus-run-session Hyprland
-TryExec=Hyprland
+Comment=Solace Hyprland session managed by start-hyprland
+Exec=start-hyprland
+TryExec=start-hyprland
 Type=Application
