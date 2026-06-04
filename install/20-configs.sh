@@ -9,6 +9,9 @@ if [[ ${1:-} == "--dry-run" ]]; then
 fi
 
 CONFIG_ROOT="$SCRIPT_DIR/../config"
+SNAPSHOT_ROOT="$SCRIPT_DIR/../Thinkpad"
+SNAPSHOT_CONFIG="$SNAPSHOT_ROOT/config"
+SNAPSHOT_SOLACE="$SNAPSHOT_ROOT/local/share/solace"
 CONFIG_HOME="$HOME/.config"
 LOCAL_SHARE_HOME="$HOME/.local/share/solace"
 BIN_HOME="$HOME/.local/bin"
@@ -95,14 +98,117 @@ install_script_helpers() {
   done
 }
 
-install_directory_contents "$CONFIG_ROOT/hypr" "$CONFIG_HOME/hypr"
-install_directory_contents "$CONFIG_ROOT/waybar" "$CONFIG_HOME/waybar"
-install_directory_contents "$CONFIG_ROOT/launcher" "$CONFIG_HOME/launcher"
-install_directory_contents "$CONFIG_ROOT/shell" "$CONFIG_HOME/shell"
-install_directory_contents "$CONFIG_ROOT/themes" "$LOCAL_SHARE_HOME/themes" copy
-install_terminal_configs
-install_notification_configs
+copy_snapshot_entry() {
+  local src="$1"
+  local dest="$2"
+  safe_copy "$src" "$dest"
+}
+
+install_snapshot_config() {
+  local name
+
+  for name in \
+    aether \
+    alacritty \
+    autostart \
+    btop \
+    chromium-flags.conf \
+    elephant \
+    environment.d \
+    fastfetch \
+    fcitx5 \
+    fontconfig \
+    ghostty \
+    gtk-3.0 \
+    gtk-4.0 \
+    hypr \
+    hyprland-preview-share-picker \
+    imv \
+    kitty \
+    mimeapps.list \
+    mise \
+    solace \
+    starship.toml \
+    swayosd \
+    tmux \
+    uwsm \
+    walker \
+    waybar \
+    wiremix \
+    xdg-terminals.list \
+    zed
+  do
+    [[ -e "$SNAPSHOT_CONFIG/$name" || -L "$SNAPSHOT_CONFIG/$name" ]] || continue
+    copy_snapshot_entry "$SNAPSHOT_CONFIG/$name" "$CONFIG_HOME/$name"
+  done
+
+  # Keep monitor layout generic. Explicit display descriptors belong in machine profiles.
+  safe_copy "$CONFIG_ROOT/hypr/monitors.conf" "$CONFIG_HOME/hypr/monitors.conf"
+}
+
+install_snapshot_solace_assets() {
+  local name
+
+  for name in applications config default themes; do
+    [[ -d "$SNAPSHOT_SOLACE/$name" ]] || continue
+    case "$name" in
+      default)
+        install_snapshot_default_assets
+        ;;
+      *)
+        copy_snapshot_entry "$SNAPSHOT_SOLACE/$name" "$LOCAL_SHARE_HOME/$name"
+        ;;
+    esac
+  done
+
+  install_snapshot_bins
+}
+
+install_snapshot_default_assets() {
+  local name
+
+  for name in "$SNAPSHOT_SOLACE/default"/*; do
+    [[ -e "$name" || -L "$name" ]] || continue
+    case "$(basename "$name")" in
+      limine|pacman|snapper|systemd|udev)
+        log "Skipping unsafe default asset: $name"
+        ;;
+      *)
+        copy_snapshot_entry "$name" "$LOCAL_SHARE_HOME/default/$(basename "$name")"
+        ;;
+    esac
+  done
+}
+
+install_snapshot_bins() {
+  local src
+  local link_src
+
+  [[ -d "$SNAPSHOT_SOLACE/bin" ]] || return 0
+  copy_snapshot_entry "$SNAPSHOT_SOLACE/bin" "$LOCAL_SHARE_HOME/bin"
+
+  for src in "$SNAPSHOT_SOLACE/bin"/*; do
+    [[ -e "$src" || -L "$src" ]] || continue
+    link_src="$LOCAL_SHARE_HOME/bin/$(basename "$src")"
+    case "$(basename "$src")" in
+      *pacman*|*limine*|*direct-boot*|*drive*|*hibernation*|*snapshot*)
+        log "Leaving potentially system-destructive helper out of PATH: $link_src"
+        ;;
+      *)
+        if [[ "$DRY_RUN" -eq 1 ]]; then
+          log "DRY: would link helper $link_src -> $BIN_HOME/$(basename "$src")"
+        else
+          mkdir -p "$BIN_HOME"
+          ln -sfn "$link_src" "$BIN_HOME/$(basename "$src")"
+        fi
+        ;;
+    esac
+  done
+}
+
+install_snapshot_config
+install_snapshot_solace_assets
 install_script_helpers
 
 log "Configs installed (or simulated in dry-run)"
-log "Thinkpad/ is the source capture for Solace UX, but is not bulk-installed without filtering."
+log "Installed Thinkpad-derived Solace UX config with hardware, mirror, and bootloader pieces filtered."
