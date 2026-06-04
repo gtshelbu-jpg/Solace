@@ -2,7 +2,13 @@
 
 # solace:summary=Launch Walker and ensure its Elephant data provider is running
 
-if ! pgrep -x elephant > /dev/null; then
+if ! command -v walker >/dev/null 2>&1; then
+  notify-send -u critical "Walker is not installed" "Install the AUR package walker-bin, then retry Super + Space." 2>/dev/null
+  echo "walker is not installed" >&2
+  exit 127
+fi
+
+if command -v elephant >/dev/null 2>&1 && ! pgrep -x elephant > /dev/null; then
   setsid uwsm-app -- elephant &
 fi
 

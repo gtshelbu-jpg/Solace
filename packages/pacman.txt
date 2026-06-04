@@ -23,6 +23,11 @@ jq
 gnome-keyring
 btop
 fastfetch
+bluetui
+bluez
+bluez-utils
+cliphist
+fd
 fcitx5
 fcitx5-gtk
 fcitx5-qt
@@ -30,14 +35,19 @@ hyprland
 hypridle
 hyprlock
 hyprsunset
+imagemagick
 imv
+impala
 libsecret
+libnotify
+libqalculate
 uwsm
 sddm
 plymouth
 polkit-gnome
 power-profiles-daemon
 qt6-wayland
+qalculate-gtk
 waybar
 alacritty
 foot
@@ -52,6 +62,7 @@ wl-clipboard
 grim
 slurp
 mpv
+pamixer
 fontconfig
 noto-fonts
 noto-fonts-cjk
@@ -62,3 +73,6 @@ brightnessctl
 swaybg
 swayosd
 hyprpicker
+sqlite
+wiremix
+wtype
