@@ -56,19 +56,31 @@ bootstrap_yay() {
   rm -rf -- "$workdir"
 }
 
+install_aur_packages() {
+  local helper="$1"
+  local pkg
+
+  for pkg in "${aur_packages[@]}"; do
+    log "Installing AUR package with $helper: $pkg"
+    run_cmd "$helper" -S --noconfirm --needed "$pkg"
+  done
+}
+
 if [[ ${#aur_packages[@]} -gt 0 ]]; then
   log "AUR packages listed in $AUR_FILE"
   if [[ "$DRY_RUN" -eq 1 ]]; then
-    log "DRY: AUR install ${aur_packages[*]}"
+    for pkg in "${aur_packages[@]}"; do
+      log "DRY: AUR install $pkg"
+    done
   else
     if command -v paru >/dev/null 2>&1; then
       log "Installing AUR packages with paru"
-      run_cmd paru -S --noconfirm --needed "${aur_packages[@]}"
+      install_aur_packages paru
     else
       bootstrap_yay
       if command -v yay >/dev/null 2>&1; then
         log "Installing AUR packages with yay"
-        run_cmd yay -S --noconfirm --needed "${aur_packages[@]}"
+        install_aur_packages yay
       else
         die "Unable to install yay helper"
       fi
