@@ -1,17 +1,16 @@
 # Solace
 
-Solace is my personal Arch Linux + Hyprland bootstrap/configuration repo.
+Solace is a personal Arch Linux + Hyprland bootstrap/configuration repo.
 
-The goal is to recreate the parts of my current Omarchy-based setup that I actually like, while removing dependency on Omarchy repositories, mirrors, branding, and update cadence. Solace should configure a normal upstream Arch install into my preferred Hyprland workstation environment.
+The project recreates the parts of a preferred Hyprland workflow without tying the setup to a specific distro overlay or third-party mirrors. Solace configures a normal upstream Arch install into a Hyprland workstation environment.
 
-This repo is not intended to be a full operating system installer. It assumes Arch Linux is already installed and bootable, then applies packages, configs, services, themes, and workflow preferences.
+This repo is not a full OS installer; it assumes Arch Linux is already installed and bootable, then applies packages, configs, services, themes, and workflow preferences for a Hyprland desktop.
 
 ## Goals
 
 - Use upstream Arch repositories only: `core`, `extra`, and optionally `multilib`
-- Do not use Omarchy package mirrors or repositories
-- Do not depend on `stable-mirror.omarchy.org`
-- Preserve the current Hyprland workflow, keybinds, theme behavior, launcher setup, terminal setup, and useful helper scripts
+- Avoid depending on third-party mirrors or overlay repos
+- Preserve a usable Hyprland workflow, keybinds, launcher, and helper scripts
 - Keep machine-specific configuration separated from general configuration
 - Make setup scripts safe, readable, and repeatable
 - Back up existing config files before replacing them
@@ -61,21 +60,26 @@ This repo is a post-install bootstrap for an already-installed Arch Linux system
 Dry run:
 
 ```bash
-./install/install.sh --dry-run
+./install.sh --dry-run
 ```
 
 Run everything:
 
 ```bash
-./install/install.sh
+./install.sh
 ```
 
 Run just packages or configs:
 
 ```bash
-./install/install.sh --only packages
-./install/install.sh --only configs
-./install/install.sh --only login
+./install.sh --only packages
+./install.sh --only configs
+./install.sh --only login
 ```
 
 Backups of overwritten files are stored under `~/.config-backups/solace-TIMESTAMP/`.
+
+Notes:
+- The installer now uses a root wrapper `./install.sh` which ensures the inner `install/` scripts are executable before running.
+- The login step will install and set the `ecorp-glitch` Plymouth theme by default (package `plymouth-theme-ecorp-glitch`).
+- This project borrows ideas from other popular Hyprland environments; it is not tied to any single distribution overlay.
