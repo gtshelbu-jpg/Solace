@@ -4,20 +4,22 @@ Run the installer from this repository to install packages, configs, and a small
 
 Dry-run (safe):
 ```bash
-./install/install.sh --dry-run
+./install.sh --dry-run
 ```
 
 Run full install (will call `sudo pacman -Syu` for system packages):
 ```bash
-./install/install.sh
+./install.sh
 ```
 
 Run only packages, configs, or login setup:
 ```bash
-./install/install.sh --only packages
-./install/install.sh --only configs
-./install/install.sh --only login
+./install.sh --only packages
+./install.sh --only configs
+./install.sh --only login
 ```
+
+The root wrapper makes every script in `install/` executable before handing off to the inner installer.
 
 Backups of overwritten files are stored in `~/.config-backups/solace-TIMESTAMP/`.
 
