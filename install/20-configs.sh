@@ -4,11 +4,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib.sh"
 
-if [[ "$1" == "--dry-run" ]]; then
+if [[ ${1:-} == "--dry-run" ]]; then
   DRY_RUN=1
 fi
 
 CONFIG_ROOT="$SCRIPT_DIR/../config"
+CONFIG_HOME="$HOME/.config"
+LOCAL_SHARE_HOME="$HOME/.local/share/solace"
+BIN_HOME="$HOME/.local/bin"
+
+shopt -s nullglob
 
 if [[ ! -d "$CONFIG_ROOT" ]]; then
   log "No config/ directory found; skipping"
@@ -17,35 +22,86 @@ fi
 
 log "Installing configs from $CONFIG_ROOT"
 
-# Example: install hyprland config
-if [[ -d "$CONFIG_ROOT/hypr" ]]; then
-  for f in "$CONFIG_ROOT/hypr"/*; do
-    [[ -f "$f" ]] || continue
-    dest="$HOME/.config/hypr/$(basename "$f")"
-    link_or_copy "$f" "$dest" link
-  done
-fi
+install_directory_contents() {
+  local src_dir="$1"
+  local dest_dir="$2"
+  local mode="${3:-link}"
 
-if [[ -d "$CONFIG_ROOT/waybar" ]]; then
-  mkdir -p "$HOME/.config/waybar"
-  for f in "$CONFIG_ROOT/waybar"/*; do
-    [[ -f "$f" ]] || continue
-    link_or_copy "$f" "$HOME/.config/waybar/$(basename "$f")" link
-  done
-fi
+  [[ -d "$src_dir" ]] || return 0
 
-if [[ -d "$CONFIG_ROOT/scripts" ]]; then
-  mkdir -p "$HOME/.local/bin"
-  for f in "$CONFIG_ROOT/scripts"/*; do
-    [[ -f "$f" ]] || continue
-    dest="$HOME/.local/bin/$(basename "$f")"
-    link_or_copy "$f" "$dest" link
-    if [[ "$DRY_RUN" -eq 0 ]]; then
-      chmod +x "$dest" || true
+  local entries=("$src_dir"/*)
+  if [[ ${#entries[@]} -eq 0 ]]; then
+    log "Skipping empty directory: $src_dir"
+    return 0
+  fi
+
+  for src in "${entries[@]}"; do
+    [[ -e "$src" || -L "$src" ]] || continue
+    if [[ "$mode" == "copy" ]]; then
+      safe_copy "$src" "$dest_dir/$(basename "$src")"
     else
-      log "DRY: chmod +x $dest"
+      safe_link "$src" "$dest_dir/$(basename "$src")"
     fi
   done
-fi
+}
+
+install_terminal_configs() {
+  local src_dir="$CONFIG_ROOT/terminal"
+  [[ -d "$src_dir" ]] || return 0
+
+  local src
+  for src in "$src_dir"/*; do
+    [[ -e "$src" || -L "$src" ]] || continue
+    case "$(basename "$src")" in
+      alacritty.toml)
+        safe_link "$src" "$CONFIG_HOME/alacritty/alacritty.toml"
+        ;;
+      kitty.conf)
+        safe_link "$src" "$CONFIG_HOME/kitty/kitty.conf"
+        ;;
+      *)
+        safe_link "$src" "$CONFIG_HOME/terminal/$(basename "$src")"
+        ;;
+    esac
+  done
+}
+
+install_notification_configs() {
+  local src_dir="$CONFIG_ROOT/notifications"
+  [[ -d "$src_dir" ]] || return 0
+
+  local src
+  for src in "$src_dir"/*; do
+    [[ -e "$src" || -L "$src" ]] || continue
+    case "$(basename "$src")" in
+      mako.ini)
+        safe_link "$src" "$CONFIG_HOME/mako/config"
+        ;;
+      *)
+        safe_link "$src" "$CONFIG_HOME/notifications/$(basename "$src")"
+        ;;
+    esac
+  done
+}
+
+install_script_helpers() {
+  local src_dir="$CONFIG_ROOT/scripts"
+  [[ -d "$src_dir" ]] || return 0
+
+  local helper
+  for helper in "$src_dir"/*; do
+    [[ -e "$helper" || -L "$helper" ]] || continue
+    install_executable "$helper" "$BIN_HOME/$(basename "$helper")"
+  done
+}
+
+install_directory_contents "$CONFIG_ROOT/hypr" "$CONFIG_HOME/hypr"
+install_directory_contents "$CONFIG_ROOT/waybar" "$CONFIG_HOME/waybar"
+install_directory_contents "$CONFIG_ROOT/launcher" "$CONFIG_HOME/launcher"
+install_directory_contents "$CONFIG_ROOT/shell" "$CONFIG_HOME/shell"
+install_directory_contents "$CONFIG_ROOT/themes" "$LOCAL_SHARE_HOME/themes" copy
+install_terminal_configs
+install_notification_configs
+install_script_helpers
 
 log "Configs installed (or simulated in dry-run)"

@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib.sh"
+shopt -s nullglob
 
 usage() {
   cat <<EOF
@@ -14,16 +15,24 @@ EOF
 
 ONLY=""
 
-while [[ ${#@} -gt 0 ]]; do
+while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) DRY_RUN=1; shift;;
-    --only) ONLY="$2"; shift 2;;
+    --only)
+      [[ $# -ge 2 ]] || die "--only requires a value"
+      ONLY="$2"
+      shift 2
+      ;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown arg: $1"; usage; exit 1;;
   esac
 done
 
 SCRIPTS=("$SCRIPT_DIR"/[0-9][0-9]-*.sh)
+
+if [[ ${#SCRIPTS[@]} -eq 0 ]]; then
+  die "No numbered install scripts found in $SCRIPT_DIR"
+fi
 
 for s in "${SCRIPTS[@]}"; do
   [[ -f "$s" ]] || continue

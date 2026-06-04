@@ -16,6 +16,7 @@
 # pipewire
 
 # Add packages below this line
+base-devel
 networkmanager
 git
 jq
@@ -27,7 +28,9 @@ mako
 pipewire
 pipewire-pulse
 wireplumber
-xdg-desktop-portal-wlr
+xdg-desktop-portal
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
 wl-clipboard
 grim
 slurp

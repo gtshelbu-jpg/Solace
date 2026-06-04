@@ -1,6 +1,6 @@
 # Installing Solace configs (post-install)
 
-Run the installer from this repository to install packages and user configs.
+Run the installer from this repository to install packages, configs, and a small set of safe services on an already-installed Arch Linux system.
 
 Dry-run (safe):
 ```bash
@@ -20,6 +20,6 @@ Run only packages or configs:
 
 Backups of overwritten files are stored in `~/.config-backups/solace-TIMESTAMP/`.
 
-Notes:
-- AUR packages require an AUR helper (paru or yay). If one is present, the installer will attempt to use it.
+- AUR packages require an AUR helper. If neither `paru` nor `yay` is present, the installer will bootstrap `yay` from the AUR.
 - Monitor-specific configs are left under `machine/thinkpad/` and are not applied automatically.
+- This repo does not partition disks, install bootloaders, or add Omarchy repos/mirrors.
