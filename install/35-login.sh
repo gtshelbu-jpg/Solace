@@ -45,6 +45,15 @@ install_sddm_wayland_config() {
   install_login_file "$greeter_src" "$greeter_dest"
 }
 
+set_plymouth_theme() {
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: sudo plymouth-set-default-theme -R ecorp-glitch"
+    return 0
+  fi
+
+  run_cmd sudo plymouth-set-default-theme -R ecorp-glitch
+}
+
 ensure_plymouth_hook() {
   [[ -f "$MKINITCPIO_CONF" ]] || { warn "No $MKINITCPIO_CONF found; skipping Plymouth hook update"; return 0; }
 
@@ -111,6 +120,7 @@ log "Installing graphical login and Plymouth boot support"
 install_wayland_session
 install_sddm_wayland_config
 ensure_plymouth_hook
+set_plymouth_theme
 rebuild_initramfs
 enable_login_manager
 
