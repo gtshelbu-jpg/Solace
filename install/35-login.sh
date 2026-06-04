@@ -12,6 +12,10 @@ LOGIN_CONFIG_ROOT="$SCRIPT_DIR/../config/login"
 SNAPSHOT_DEFAULT_ROOT="$SCRIPT_DIR/../Thinkpad/local/share/solace/default"
 MKINITCPIO_CONF="/etc/mkinitcpio.conf"
 RECOMMENDED_KERNEL_FLAGS=("quiet" "splash")
+STALE_SDDM_CONFIGS=(
+  /etc/sddm.conf.d/90-solace-theme.conf
+  /etc/sddm.conf.d/20-theme.conf
+)
 
 install_login_file() {
   local src="$1"
@@ -53,21 +57,30 @@ install_wayland_session() {
 install_sddm_wayland_config() {
   local src="$LOGIN_CONFIG_ROOT/sddm/10-wayland.conf"
   local dest="/etc/sddm.conf.d/10-wayland.conf"
-  local theme_src="$LOGIN_CONFIG_ROOT/sddm/90-solace-theme.conf"
-  local theme_dest="/etc/sddm.conf.d/90-solace-theme.conf"
   local greeter_src="$LOGIN_CONFIG_ROOT/sddm/hyprland.conf"
   local greeter_dest="/usr/share/sddm/hyprland.conf"
-  local sddm_theme_src="$SNAPSHOT_DEFAULT_ROOT/sddm/solace"
-  local sddm_theme_dest="/usr/share/sddm/themes/solace"
 
   [[ -f "$src" ]] || die "Missing SDDM config: $src"
-  [[ -f "$theme_src" ]] || die "Missing SDDM theme config: $theme_src"
   [[ -f "$greeter_src" ]] || die "Missing SDDM greeter config: $greeter_src"
 
   install_login_file "$src" "$dest"
-  install_login_file "$theme_src" "$theme_dest"
   install_login_file "$greeter_src" "$greeter_dest"
-  install_system_tree "$sddm_theme_src" "$sddm_theme_dest"
+}
+
+remove_stale_sddm_configs() {
+  local file
+
+  for file in "${STALE_SDDM_CONFIGS[@]}"; do
+    [[ -e "$file" || -L "$file" ]] || continue
+
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      log "DRY: would back up and remove stale SDDM config $file"
+      continue
+    fi
+
+    backup_target "$file"
+    run_cmd sudo rm -f -- "$file"
+  done
 }
 
 install_plymouth_theme() {
@@ -294,6 +307,7 @@ enable_login_manager() {
 log "Installing graphical login and Plymouth boot support"
 install_wayland_session
 install_sddm_wayland_config
+remove_stale_sddm_configs
 ensure_plymouth_hook
 install_plymouth_theme
 set_plymouth_theme
