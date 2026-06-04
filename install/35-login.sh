@@ -10,6 +10,7 @@ fi
 
 LOGIN_CONFIG_ROOT="$SCRIPT_DIR/../config/login"
 MKINITCPIO_CONF="/etc/mkinitcpio.conf"
+RECOMMENDED_KERNEL_FLAGS=("quiet" "splash")
 
 install_login_file() {
   local src="$1"
@@ -98,6 +99,149 @@ PY
   log "Updated Plymouth hook in $MKINITCPIO_CONF"
 }
 
+check_kernel_cmdline_flags() {
+  local cmdline=""
+  local missing=()
+  local flag
+
+  if [[ -r /proc/cmdline ]]; then
+    cmdline="$(< /proc/cmdline)"
+  fi
+
+  for flag in "${RECOMMENDED_KERNEL_FLAGS[@]}"; do
+    if [[ " $cmdline " != *" $flag "* ]]; then
+      missing+=("$flag")
+    fi
+  done
+
+  if [[ ${#missing[@]} -eq 0 ]]; then
+    log "Kernel cmdline already includes Plymouth-friendly flags: ${RECOMMENDED_KERNEL_FLAGS[*]}"
+    return 0
+  fi
+
+  warn "Kernel cmdline is missing Plymouth-friendly flag(s): ${missing[*]}"
+  warn "Solace updates supported bootloader/kernel cmdline files during the login install step, but the new flags take effect after reboot."
+}
+
+ensure_flags_in_cmdline_file() {
+  local mode="$1"
+  local file="$2"
+
+  [[ -f "$file" ]] || return 1
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: would ensure '${RECOMMENDED_KERNEL_FLAGS[*]}' in $file"
+    return 0
+  fi
+
+  backup_target "$file"
+
+  run_cmd sudo python3 - "$mode" "$file" "${RECOMMENDED_KERNEL_FLAGS[@]}" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+mode = sys.argv[1]
+path = Path(sys.argv[2])
+flags = sys.argv[3:]
+text = path.read_text()
+
+def add_flags(cmdline: str) -> str:
+    parts = cmdline.split()
+    for flag in flags:
+        if flag not in parts:
+            parts.append(flag)
+    return " ".join(parts)
+
+changed = False
+
+if mode == "kernel":
+    lines = text.splitlines()
+    if not lines:
+        lines = [""]
+    lines[0] = add_flags(lines[0])
+    new_text = "\n".join(lines) + ("\n" if text.endswith("\n") or lines else "")
+    changed = new_text != text
+elif mode == "limine":
+    def repl(match: re.Match[str]) -> str:
+        global changed
+        updated = match.group(1) + add_flags(match.group(2))
+        if updated != match.group(0):
+            changed = True
+        return updated
+    new_text = re.sub(r"^(\s*cmdline:\s*)(.*?)\s*$", repl, text, flags=re.MULTILINE)
+elif mode == "systemd-boot":
+    def repl(match: re.Match[str]) -> str:
+        global changed
+        updated = match.group(1) + add_flags(match.group(2))
+        if updated != match.group(0):
+            changed = True
+        return updated
+    new_text = re.sub(r"^(\s*options\s+)(.*?)\s*$", repl, text, flags=re.MULTILINE)
+elif mode == "grub":
+    pattern = re.compile(r'^(GRUB_CMDLINE_LINUX_DEFAULT=)(["\'])(.*?)(\2)\s*$', re.MULTILINE)
+    match = pattern.search(text)
+    if match:
+        updated_value = add_flags(match.group(3))
+        replacement = f"{match.group(1)}{match.group(2)}{updated_value}{match.group(4)}"
+        new_text = text[:match.start()] + replacement + text[match.end():]
+        changed = new_text != text
+    else:
+        suffix = "" if text.endswith("\n") or not text else "\n"
+        new_text = text + suffix + f'GRUB_CMDLINE_LINUX_DEFAULT="{add_flags("")}"\n'
+        changed = True
+else:
+    raise SystemExit(f"Unknown cmdline mode: {mode}")
+
+if changed:
+    path.write_text(new_text)
+PY
+
+  log "Ensured Plymouth kernel flags in $file"
+  return 0
+}
+
+ensure_plymouth_kernel_flags() {
+  local found=0
+  local file
+
+  if ensure_flags_in_cmdline_file kernel /etc/kernel/cmdline; then
+    found=1
+  fi
+
+  for file in /boot/limine.conf /efi/limine.conf /boot/efi/limine.conf; do
+    if ensure_flags_in_cmdline_file limine "$file"; then
+      found=1
+    fi
+  done
+
+  shopt -s nullglob
+  for file in /boot/loader/entries/*.conf /efi/loader/entries/*.conf /boot/efi/loader/entries/*.conf; do
+    if ensure_flags_in_cmdline_file systemd-boot "$file"; then
+      found=1
+    fi
+  done
+  shopt -u nullglob
+
+  if ensure_flags_in_cmdline_file grub /etc/default/grub; then
+    found=1
+    if command -v grub-mkconfig >/dev/null 2>&1; then
+      if [[ "$DRY_RUN" -eq 1 ]]; then
+        log "DRY: sudo grub-mkconfig -o /boot/grub/grub.cfg"
+      else
+        run_cmd sudo grub-mkconfig -o /boot/grub/grub.cfg
+      fi
+    else
+      warn "Updated /etc/default/grub but grub-mkconfig was not found; GRUB config may need regeneration."
+    fi
+  fi
+
+  if [[ "$found" -eq 0 ]]; then
+    warn "No known bootloader cmdline file found for automatic Plymouth flag setup."
+    warn "Supported automatic targets: /etc/kernel/cmdline, Limine configs, systemd-boot loader entries, /etc/default/grub."
+  fi
+}
+
 rebuild_initramfs() {
   if [[ "$DRY_RUN" -eq 1 ]]; then
     log "DRY: sudo mkinitcpio -P"
@@ -121,7 +265,9 @@ install_wayland_session
 install_sddm_wayland_config
 ensure_plymouth_hook
 set_plymouth_theme
+ensure_plymouth_kernel_flags
 rebuild_initramfs
 enable_login_manager
+check_kernel_cmdline_flags
 
 log "Login flow configured: boot splash via Plymouth, graphical login via SDDM, Hyprland session via Solace"
