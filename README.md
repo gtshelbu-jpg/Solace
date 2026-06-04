@@ -82,6 +82,6 @@ Backups of overwritten files are stored under `~/.config-backups/solace-TIMESTAM
 
 Notes:
 - The installer now uses a root wrapper `./install.sh` which ensures the inner `install/` scripts are executable before running.
-- The login step will install and set the `ecorp-glitch` Plymouth theme by default (package `plymouth-theme-ecorp-glitch`).
+- The login step installs and sets the bundled `solace` Plymouth theme by default.
 - The `Thinkpad/` snapshot is the source-of-truth capture for the desired desktop experience, but hardware-specific, pacman/mirror, bootloader, and machine recovery pieces must be filtered before they are installed automatically.
 - This project borrows ideas from other popular Hyprland environments; it is not tied to any single distribution overlay.

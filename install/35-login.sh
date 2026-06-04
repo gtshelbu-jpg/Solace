@@ -9,6 +9,7 @@ if [[ ${1:-} == "--dry-run" ]]; then
 fi
 
 LOGIN_CONFIG_ROOT="$SCRIPT_DIR/../config/login"
+SNAPSHOT_DEFAULT_ROOT="$SCRIPT_DIR/../Thinkpad/local/share/solace/default"
 MKINITCPIO_CONF="/etc/mkinitcpio.conf"
 RECOMMENDED_KERNEL_FLAGS=("quiet" "splash")
 
@@ -25,6 +26,22 @@ install_login_file() {
   run_cmd sudo install -Dm644 "$src" "$dest"
 }
 
+install_system_tree() {
+  local src="$1"
+  local dest="$2"
+
+  [[ -d "$src" ]] || die "Missing system tree: $src"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: would install tree $src -> $dest"
+    return 0
+  fi
+
+  backup_target "$dest"
+  run_cmd sudo install -d -m 0755 "$dest"
+  run_cmd sudo cp -a "$src/." "$dest/"
+}
+
 install_wayland_session() {
   local src="$LOGIN_CONFIG_ROOT/wayland-sessions/solace.desktop"
   local dest="/usr/local/share/wayland-sessions/solace.desktop"
@@ -36,23 +53,37 @@ install_wayland_session() {
 install_sddm_wayland_config() {
   local src="$LOGIN_CONFIG_ROOT/sddm/10-wayland.conf"
   local dest="/etc/sddm.conf.d/10-wayland.conf"
+  local theme_src="$LOGIN_CONFIG_ROOT/sddm/90-solace-theme.conf"
+  local theme_dest="/etc/sddm.conf.d/90-solace-theme.conf"
   local greeter_src="$LOGIN_CONFIG_ROOT/sddm/hyprland.conf"
   local greeter_dest="/usr/share/sddm/hyprland.conf"
+  local sddm_theme_src="$SNAPSHOT_DEFAULT_ROOT/sddm/solace"
+  local sddm_theme_dest="/usr/share/sddm/themes/solace"
 
   [[ -f "$src" ]] || die "Missing SDDM config: $src"
+  [[ -f "$theme_src" ]] || die "Missing SDDM theme config: $theme_src"
   [[ -f "$greeter_src" ]] || die "Missing SDDM greeter config: $greeter_src"
 
   install_login_file "$src" "$dest"
+  install_login_file "$theme_src" "$theme_dest"
   install_login_file "$greeter_src" "$greeter_dest"
+  install_system_tree "$sddm_theme_src" "$sddm_theme_dest"
+}
+
+install_plymouth_theme() {
+  local theme_src="$SNAPSHOT_DEFAULT_ROOT/plymouth"
+  local theme_dest="/usr/share/plymouth/themes/solace"
+
+  install_system_tree "$theme_src" "$theme_dest"
 }
 
 set_plymouth_theme() {
   if [[ "$DRY_RUN" -eq 1 ]]; then
-    log "DRY: sudo plymouth-set-default-theme -R ecorp-glitch"
+    log "DRY: sudo plymouth-set-default-theme -R solace"
     return 0
   fi
 
-  run_cmd sudo plymouth-set-default-theme -R ecorp-glitch
+  run_cmd sudo plymouth-set-default-theme -R solace
 }
 
 ensure_plymouth_hook() {
@@ -264,6 +295,7 @@ log "Installing graphical login and Plymouth boot support"
 install_wayland_session
 install_sddm_wayland_config
 ensure_plymouth_hook
+install_plymouth_theme
 set_plymouth_theme
 ensure_plymouth_kernel_flags
 rebuild_initramfs

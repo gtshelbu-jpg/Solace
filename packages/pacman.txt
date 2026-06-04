@@ -21,6 +21,7 @@ networkmanager
 git
 jq
 hyprland
+uwsm
 sddm
 plymouth
 qt6-wayland

@@ -27,7 +27,7 @@ Backups of overwritten files are stored in `~/.config-backups/solace-TIMESTAMP/`
 - Monitor-specific configs are left under `machine/thinkpad/` and are not applied automatically.
 - This repo does not partition disks, install bootloaders, or add Omarchy repos/mirrors.
 - The login step enables SDDM, installs a Solace Wayland session, updates initramfs for Plymouth support, and adds Plymouth kernel flags to supported bootloader/kernel-cmdline files.
-- The login step also installs and sets `plymouth-theme-ecorp-glitch` as the default Plymouth theme.
+- The login step also installs and sets the bundled `solace` Plymouth theme.
 - The `Thinkpad/` snapshot is the source capture for the desired UX/UI/GUI experience, but it is filtered before promotion into active install paths.
 - Plymouth splash depends on the active boot entry using the normal splash-friendly flags. The installer handles common Arch boot setups automatically.
 
