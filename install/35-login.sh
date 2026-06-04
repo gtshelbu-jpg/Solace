@@ -14,7 +14,14 @@ MKINITCPIO_CONF="/etc/mkinitcpio.conf"
 install_login_file() {
   local src="$1"
   local dest="$2"
-  safe_copy "$src" "$dest"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: would install $src -> $dest"
+    return 0
+  fi
+
+  backup_target "$dest"
+  run_cmd sudo install -Dm644 "$src" "$dest"
 }
 
 install_wayland_session() {
@@ -53,7 +60,7 @@ ensure_plymouth_hook() {
 
   backup_target "$MKINITCPIO_CONF"
 
-  python3 - "$MKINITCPIO_CONF" <<'PY'
+  run_cmd sudo python3 - "$MKINITCPIO_CONF" <<'PY'
 from pathlib import Path
 import re
 import sys
