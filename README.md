@@ -53,7 +53,7 @@ This repo is a post-install bootstrap for an already-installed Arch Linux system
 1. `install/10-packages.sh` installs official repo packages from `packages/pacman.txt`, bootstraps `yay` if needed, and installs AUR packages from `packages/aur.txt`.
 2. `install/20-configs.sh` backs up existing config and links or copies reviewed reusable config into the current user account.
 3. `install/30-services.sh` enables only safe, generic services.
-4. `install/35-login.sh` provisions the SDDM login manager, Solace Wayland session, and Plymouth boot support.
+4. `install/35-login.sh` provisions Plymouth, SDDM autologin, the Solace Wayland session, and login keyring behavior using the Omarchy-derived flow.
 5. `install/40-postinstall.sh` performs light finishing steps and prints follow-up guidance.
 
 ### Usage

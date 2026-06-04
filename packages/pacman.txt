@@ -20,7 +20,9 @@ base-devel
 networkmanager
 git
 jq
+gnome-keyring
 hyprland
+libsecret
 uwsm
 sddm
 plymouth
