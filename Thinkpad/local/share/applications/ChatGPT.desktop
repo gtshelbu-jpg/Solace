@@ -2,7 +2,7 @@
 Version=1.0
 Name=ChatGPT
 Comment=ChatGPT
-Exec=omarchy-launch-webapp https://chatgpt.com/
+Exec=solace-launch-webapp https://chatgpt.com/
 Terminal=false
 Type=Application
 Icon=/home/givan1435/.local/share/applications/icons/ChatGPT.png

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# solace:summary=Log out after closing application windows
+# solace:examples=solace logout | solace system logout
+# solace:aliases=solace logout
+
+nohup bash -c "sleep 2 && uwsm stop" >/dev/null 2>&1 &
+
+# Now close all windows
+solace-hyprland-window-close-all
+sleep 1 # Allow apps like Chrome to shutdown correctly

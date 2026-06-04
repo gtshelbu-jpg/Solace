@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# solace:summary=Overwrite the user config for fastfetch with the Solace default.
+
+solace-refresh-config fastfetch/config.jsonc

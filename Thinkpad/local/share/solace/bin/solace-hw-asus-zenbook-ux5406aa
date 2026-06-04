@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# solace:summary=Detect ASUS Zenbook UX5406AA series laptops on Intel Panther Lake.
+
+solace-hw-match "ux5406aa" && solace-hw-intel-ptl

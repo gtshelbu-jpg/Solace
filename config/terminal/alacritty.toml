@@ -1,0 +1,9 @@
+# Minimal Alacritty config sample
+window:
+  padding:
+    x: 6
+    y: 6
+
+font:
+  normal:
+    family: "Noto Sans Mono"

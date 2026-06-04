@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# solace:summary=Refresh the SDDM theme from default
+# solace:requires-sudo=true
+
+sudo rm -rf /usr/share/sddm/themes/solace
+sudo cp -r $SOLACE_PATH/default/sddm/solace /usr/share/sddm/themes/solace

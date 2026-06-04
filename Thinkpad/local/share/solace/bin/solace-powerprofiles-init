@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# solace:summary=Set the correct power profile on boot based on current AC/battery state.
+
+if solace-battery-present && ! solace-ac-present; then
+  solace-powerprofiles-set battery
+else
+  solace-powerprofiles-set ac
+fi

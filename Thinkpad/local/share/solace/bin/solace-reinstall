@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# solace:summary=Reinstall Solace packages and reset default configs
+# solace:requires-sudo=true
+
+set -e
+
+# Attempt to reinstall all default Solace packages and reset all the default configs.
+
+echo -e "This will reinstall all the default Solace packages and reset all default configs.\nWarning: All user changes to configs will be lost.\n"
+
+if gum confirm "Are you sure you want to reinstall and lose all config changes?"; then
+  solace-reinstall-git
+  solace-reinstall-pkgs
+  solace-reinstall-configs
+
+  gum confirm "System has been reinstalled. Reboot?" && solace-system-reboot
+fi

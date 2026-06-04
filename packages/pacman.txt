@@ -1,0 +1,36 @@
+# Official Arch packages (one per line). Edit to suit your setup.
+# Examples (uncomment to use):
+# base
+# linux
+# linux-firmware
+# networkmanager
+# xorg-server
+# hyprland
+# waybar
+# wl-clipboard
+# alacritty
+# foot
+# swaylock
+# mako
+# wireplumber
+# pipewire
+
+# Add packages below this line
+networkmanager
+git
+jq
+hyprland
+waybar
+alacritty
+foot
+mako
+pipewire
+pipewire-pulse
+wireplumber
+xdg-desktop-portal-wlr
+wl-clipboard
+grim
+slurp
+mpv
+noto-fonts
+brightnessctl

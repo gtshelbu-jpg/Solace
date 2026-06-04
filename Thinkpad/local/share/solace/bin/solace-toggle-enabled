@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# solace:summary=Check if a toggle is enabled (flag file exists)
+# solace:args=<flag-name>
+
+[[ -f "$HOME/.local/state/solace/toggles/$1" ]]

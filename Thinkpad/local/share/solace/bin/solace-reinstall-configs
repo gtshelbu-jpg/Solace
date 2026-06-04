@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# solace:summary=Reset all Solace user configs to the defaults
+# solace:requires-sudo=true
+
+set -e
+
+# Overwrite all user configs with the Solace defaults.
+
+if (( EUID == 0 )); then
+  echo "Error: This script should not be run as root"
+  exit 1
+fi
+
+echo "Resetting all Solace configs"
+cp -R ~/.local/share/solace/config/* ~/.config/
+cp ~/.local/share/solace/default/bashrc ~/.bashrc
+echo '[[ -f ~/.bashrc ]] && . ~/.bashrc' | tee ~/.bash_profile >/dev/null
+
+$(bash $SOLACE_PATH/install/config/theme.sh)
+
+solace-refresh-limine
+solace-refresh-plymouth
+solace-nvim-setup

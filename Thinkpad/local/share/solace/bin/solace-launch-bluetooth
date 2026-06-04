@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# solace:summary=Launch the Solace bluetooth controls TUI (provided by bluetui).
+
+rfkill unblock bluetooth
+exec solace-launch-or-focus-tui bluetui

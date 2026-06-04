@@ -1,0 +1,10 @@
+# AUR packages (one per line). Examples:
+# paru
+# hyprland
+# waybar-hyprland
+
+# Add AUR package names below this line
+waybar-hyprland
+mpvpaper
+hyprpicker
+hyprland-git

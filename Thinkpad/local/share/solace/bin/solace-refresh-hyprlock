@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# solace:summary=Overwrite the user config for hyprlock with the Solace default.
+
+solace-refresh-config hypr/hyprlock.conf

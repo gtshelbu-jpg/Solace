@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# solace:summary=Overwrite the user config for hyprsunset with the Solace default and restart the service.
+
+solace-refresh-config hypr/hyprsunset.conf
+solace-restart-hyprsunset

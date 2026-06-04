@@ -17,9 +17,9 @@ ensure_bin_runtime() {
   IFS= read -r shebang < "$bin_path"
 
   if [[ $shebang == "#!"*"/bun"* || $shebang == "#!"*"/env bun"* ]]; then
-    if omarchy-cmd-missing bun; then
+    if solace-cmd-missing bun; then
       echo "Installing bun runtime for $package..."
-      omarchy-pkg-add bun
+      solace-pkg-add bun
       hash -r
     fi
   fi

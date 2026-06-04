@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# solace:summary=Set the branch for Solace's git repository.
+# solace:args=<master|rc|dev>
+
+if (($# == 0)); then
+  echo "Usage: solace-branch-set [master|rc|dev]"
+  exit 1
+else
+  branch="$1"
+fi
+
+if [[ $branch != "master" && $branch != "rc" && $branch != "dev" ]]; then
+  echo "Error: Invalid branch '$branch'. Must be one of: master, rc, dev"
+  exit 1
+fi
+
+git -C $SOLACE_PATH switch $branch

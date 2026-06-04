@@ -1,0 +1,6 @@
+source ~/.local/share/solace/default/bash/envs
+source ~/.local/share/solace/default/bash/shell
+source ~/.local/share/solace/default/bash/aliases
+source ~/.local/share/solace/default/bash/functions
+source ~/.local/share/solace/default/bash/init
+[[ $- == *i* ]] && bind -f ~/.local/share/solace/default/bash/inputrc

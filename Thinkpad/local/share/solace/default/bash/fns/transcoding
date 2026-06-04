@@ -1,0 +1,33 @@
+# Transcoding helpers have moved to solace-transcode.
+
+transcode-video-1080p() {
+  solace-transcode "$1" mp4 1080p
+}
+
+transcode-video-4K() {
+  solace-transcode "$1" mp4 4k
+}
+
+transcode-video-gif() {
+  solace-transcode "$1" gif 1080p
+}
+
+img2jpg() {
+  solace-transcode "$1" jpg high
+}
+
+img2jpg-small() {
+  solace-transcode "$1" jpg low
+}
+
+img2jpg-medium() {
+  solace-transcode "$1" jpg medium
+}
+
+img2jpg-large() {
+  solace-transcode "$1" jpg high
+}
+
+img2png() {
+  solace-transcode "$1" png high
+}

@@ -1,0 +1,11 @@
+[Plymouth Theme]
+Name=Solace
+Description=Solace splash screen.
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/solace
+ScriptFile=/usr/share/plymouth/themes/solace/solace.script
+ConsoleLogBackgroundColor=0x1a1b26
+MonospaceFont=Cantarell 11
+Font=Cantarell 11

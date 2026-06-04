@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# solace:summary=Pull the latest Solace git changes
+
+set -e
+
+echo -e "\e[32mUpdate Solace\e[0m"
+
+solace-update-time
+
+# Suppress Hyprland config errors while git updates default config files mid-pull
+hyprctl keyword debug:suppress_errors true &>/dev/null || true
+
+git -C $SOLACE_PATH pull --autostash
+git -C $SOLACE_PATH --no-pager diff --check || git -C $SOLACE_PATH reset --merge
+
+hyprctl reload &>/dev/null || true

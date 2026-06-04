@@ -2,7 +2,7 @@
 Version=1.0
 Name=HEY
 Comment=HEY
-Exec=omarchy-webapp-handler-hey %u
+Exec=solace-webapp-handler-hey %u
 Terminal=false
 Type=Application
 Icon=/home/givan1435/.local/share/applications/icons/HEY.png

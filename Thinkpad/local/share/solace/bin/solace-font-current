@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# solace:summary=Show current monospace font
+# solace:examples=solace font current
+
+grep -oP 'font-family:\s*["'\'']?\K[^;"'\'']+' ~/.config/waybar/style.css | head -n1

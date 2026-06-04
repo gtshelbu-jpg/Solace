@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# solace:summary=Prompt for text input with Walker
+# solace:group=menu
+# solace:name=input
+# solace:args=prompt [walker args...]
+# solace:examples=solace menu input Reminder|solace-menu-input "Reminder in minutes" --width 400
+
+set -euo pipefail
+
+prompt="${1:-Input}"
+if (( $# > 0 )); then
+  shift
+fi
+
+solace-launch-walker --dmenu --inputonly --width 295 --minheight 1 --maxheight 1 -p "$prompt…" "$@" 2>/dev/null

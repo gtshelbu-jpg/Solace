@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# solace:summary=Apply the current theme keyboard color to supported keyboards
+# solace:hidden=true
+
+solace-theme-set-keyboard-asus-rog
+solace-theme-set-keyboard-f16

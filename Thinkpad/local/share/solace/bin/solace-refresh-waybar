@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# solace:summary=Reset Waybar config to Solace defaults
+# solace:examples=solace refresh waybar
+
+solace-refresh-config waybar/config.jsonc
+solace-refresh-config waybar/style.css
+solace-restart-waybar

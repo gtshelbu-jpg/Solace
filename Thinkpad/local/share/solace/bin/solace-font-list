@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# solace:summary=List available monospace fonts
+# solace:examples=solace font list | solace font set "CaskaydiaMono Nerd Font"
+
+fc-list :spacing=100 -f "%{family[0]}\n" | grep -v -i -E 'emoji|signwriting|solace' | sort -u

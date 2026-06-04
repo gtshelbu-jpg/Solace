@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# solace:summary=Apply the current theme keyboard color to ASUS ROG keyboards
+# solace:hidden=true
+
+ASUSCTL_THEME=~/.config/solace/current/theme/keyboard.rgb
+
+if solace-cmd-present asusctl; then
+  asusctl aura effect static -c $(sed 's/^#//' $ASUSCTL_THEME)
+fi

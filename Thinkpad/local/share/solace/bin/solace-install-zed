@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# solace:summary=Install Zed Editor and configure it with the current Solace theme
+
+echo "Installing Zed Editor..."
+solace-pkg-add zed omazed
+
+# Apply Solace theme to Zed
+omazed setup
+
+setsid gtk-launch dev.zed.Zed

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# solace:summary=Creates a new Solace migration named after the unix timestamp of the last commit.
+
+cd ~/.local/share/solace
+migration_file="$HOME/.local/share/solace/migrations/$(git log -1 --format=%cd --date=unix).sh"
+touch $migration_file
+
+if [[ $1 != "--no-edit" ]]; then
+  nvim $migration_file
+fi
+
+echo $migration_file

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# solace:summary=Toggle Waybar visibility
+# solace:examples=solace toggle waybar
+
+solace-toggle waybar-off
+
+if pgrep -x waybar >/dev/null; then
+  pkill -x waybar
+else
+  uwsm-app -- waybar >/dev/null 2>&1 &
+fi

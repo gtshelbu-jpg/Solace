@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# solace:summary=Reload hyprland configuration (used by the Solace theme switching).
+
+hyprctl reload >/dev/null

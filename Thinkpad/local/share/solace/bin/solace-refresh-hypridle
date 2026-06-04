@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# solace:summary=Overwrite the user config for hypridle with the Solace default and restart the service.
+
+solace-refresh-config hypr/hypridle.conf
+solace-restart-hypridle

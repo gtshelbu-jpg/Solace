@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# solace:summary=Edit, set, or reset About branding
+# solace:group=branding
+# solace:name=about
+# solace:args=<image|text|reset>
+# solace:examples=solace branding about image | solace branding about text | solace branding about reset
+
+set -euo pipefail
+
+case "${1:-}" in
+image)
+  image=$(solace-menu-file "Logo image" "$HOME" "svg png")
+  if [[ -n $image ]] && solace-transcode-ascii "$image" ~/.config/solace/branding/about.txt --width 54 --height 26 --mode block; then
+    solace-launch-about >/dev/null 2>&1
+  fi
+  ;;
+text)
+  solace-launch-editor ~/.config/solace/branding/about.txt >/dev/null 2>&1 && solace-launch-about >/dev/null 2>&1
+  ;;
+reset)
+  cp "$SOLACE_PATH/icon.txt" ~/.config/solace/branding/about.txt && solace-launch-about >/dev/null 2>&1
+  ;;
+*)
+  echo "Usage: solace-branding-about <image|text|reset>" >&2
+  exit 1
+  ;;
+esac

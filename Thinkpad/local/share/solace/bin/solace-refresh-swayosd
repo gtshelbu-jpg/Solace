@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# solace:summary=Overwrite the user configs for swayosd (controls on-screen feedback for changing volume/songs etc) with the Solace defaults and restart the service.
+
+solace-refresh-config swayosd/config.toml
+solace-refresh-config swayosd/style.css
+solace-restart-swayosd

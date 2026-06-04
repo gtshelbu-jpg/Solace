@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# solace:summary=Launch the Solace wifi controls (provided by the Impala TUI).
+
+rfkill unblock wifi
+solace-launch-or-focus-tui impala

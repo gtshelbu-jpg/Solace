@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# solace:summary=Print the current Solace git branch
+
+echo $(git -C "$SOLACE_PATH" rev-parse --abbrev-ref HEAD)

@@ -2,7 +2,7 @@
 Version=1.0
 Name=Fizzy
 Comment=Fizzy
-Exec=omarchy-launch-webapp https://app.fizzy.do/
+Exec=solace-launch-webapp https://app.fizzy.do/
 Terminal=false
 Type=Application
 Icon=/home/givan1435/.local/share/applications/icons/Fizzy.png

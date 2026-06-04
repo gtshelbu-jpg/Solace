@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# solace:summary=Reload mako configuration (used by the Solace theme switching).
+
+makoctl reload

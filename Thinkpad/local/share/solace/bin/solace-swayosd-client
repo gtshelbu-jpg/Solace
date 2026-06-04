@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# solace:summary=Wrapper for swayosd-client that targets the currently focused monitor.
+# solace:args=<swayosd-client-args...>
+
+exec swayosd-client --monitor "$(solace-hyprland-monitor-focused)" "$@"

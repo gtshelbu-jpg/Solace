@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# solace:summary=Reinstall the Solace source directory from git
+
+set -e
+
+# Reinstall the Solace configuration directory from the git source.
+
+git clone --depth=1 --branch master "https://github.com/basecamp/solace.git" ~/.local/share/solace-new >/dev/null
+mv $SOLACE_PATH ~/.local/share/solace-old
+mv ~/.local/share/solace-new $SOLACE_PATH

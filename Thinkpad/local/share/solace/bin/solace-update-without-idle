@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# solace:summary=No-op now that solace-update-perform is responsible for idle management.
+# solace:hidden=true

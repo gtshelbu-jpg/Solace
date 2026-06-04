@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# solace:summary=Launch a floating terminal with the Solace presentation wrapper
+# solace:args=<command>
+
+cmd="$*"
+exec setsid uwsm-app -- xdg-terminal-exec --app-id=org.solace.terminal --title=Solace -e bash -c "solace-show-logo; $cmd; if (( \$? != 130 )); then solace-show-done; fi"

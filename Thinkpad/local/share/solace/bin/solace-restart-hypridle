@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# solace:summary=Restart the hypridle service (used for idle detection and auto-lock).
+
+solace-restart-app hypridle

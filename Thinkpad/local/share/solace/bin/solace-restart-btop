@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# solace:summary=Reload btop configuration (used by the Solace theme switching).
+
+pkill -SIGUSR2 btop

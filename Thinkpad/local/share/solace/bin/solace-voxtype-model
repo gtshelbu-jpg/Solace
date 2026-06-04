@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# solace:summary=Open Voxtype AI model setup
+
+set -e
+
+solace-launch-floating-terminal-with-presentation "voxtype setup model"
+solace-restart-waybar

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# solace:summary=Print the installed Solace version
+
+cat $SOLACE_PATH/version

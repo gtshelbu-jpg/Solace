@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# solace:summary=Install Steam and graphics drivers selected for this system
+# solace:requires-sudo=true
+
+set -e
+
+echo "Installing Steam..."
+solace-pkg-add steam
+solace-install-gaming-gpu-lib32
+
+echo ""
+echo "Steam will start automatically now. This might take a while..."
+
+setsid gtk-launch steam >/dev/null 2>&1 &

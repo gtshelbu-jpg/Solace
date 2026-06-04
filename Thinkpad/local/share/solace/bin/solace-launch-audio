@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# solace:summary=Launch the Solace audio controls TUI (provided by wiremix).
+
+solace-launch-or-focus-tui wiremix

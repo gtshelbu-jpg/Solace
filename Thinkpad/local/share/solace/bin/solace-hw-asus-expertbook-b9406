@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# solace:summary=Detect ASUS ExpertBook B9406 series laptops on Intel Panther Lake.
+
+solace-hw-match "B9406" && solace-hw-intel-ptl

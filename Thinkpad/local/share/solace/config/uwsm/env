@@ -1,0 +1,11 @@
+# Changes require a restart to take effect.
+
+# Ensure Solace bins are in the path
+export SOLACE_PATH=$HOME/.local/share/solace
+export PATH=$SOLACE_PATH/bin:$PATH:$HOME/.local/bin
+
+# Set default terminal and editor
+source ~/.config/uwsm/default
+
+# Activate mise if present on the system
+solace-cmd-present mise && eval "$(mise activate bash --shims)"
