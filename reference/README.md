@@ -1,10 +1,10 @@
-# Reference notes from `Thinkpad/`
+# Review notes from `Thinkpad/`
 
-This folder holds extracted notes and references from the `Thinkpad/` snapshot. It should not contain active configuration used by the installer; rather, copy or adapt files from `Thinkpad/` into `config/` or `machine/thinkpad/` when they are verified safe and generic.
+This folder holds review notes derived from the `Thinkpad/` snapshot. The snapshot is the source capture of the desired Solace desktop experience; UX/UI/GUI config should be promoted into active install paths after filtering out hardware-specific, distro-overlay, mirror, bootloader, and machine recovery pieces.
 
 Next steps:
-- Review `Thinkpad/` and classify files into reusable vs machine-specific.
-- Move generic Hyprland/Waybar/launcher configs into `config/`.
+- Review `Thinkpad/` and classify files into reusable UX vs machine-specific or unsafe system behavior.
+- Promote generic Hyprland/Waybar/launcher/theme/app configs into `config/`.
 - Keep monitor and dock display profiles under `machine/thinkpad/` to avoid applying them blindly.
 
 Warnings:
