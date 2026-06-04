@@ -206,8 +206,26 @@ install_snapshot_bins() {
   done
 }
 
+sanitize_installed_hypr_defaults() {
+  local looknfeel="$LOCAL_SHARE_HOME/default/hypr/looknfeel.conf"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: would sanitize legacy Hyprland looknfeel defaults in $looknfeel"
+    return 0
+  fi
+
+  [[ -f "$looknfeel" ]] || return 0
+
+  sed -i \
+    -e 's/^\([[:space:]]*col\.border_locked_active[[:space:]]*=[[:space:]]*\)-1[[:space:]]*$/\1$activeBorderColor/' \
+    -e 's/^\([[:space:]]*col\.border_locked_inactive[[:space:]]*=[[:space:]]*\)-1[[:space:]]*$/\1$inactiveBorderColor/' \
+    -e '/^[[:space:]]*dim_special[[:space:]]*=/d' \
+    "$looknfeel"
+}
+
 install_snapshot_config
 install_snapshot_solace_assets
+sanitize_installed_hypr_defaults
 install_script_helpers
 
 log "Configs installed (or simulated in dry-run)"
