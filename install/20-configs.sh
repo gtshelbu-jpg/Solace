@@ -12,9 +12,11 @@ CONFIG_ROOT="$SCRIPT_DIR/../config"
 SNAPSHOT_ROOT="$SCRIPT_DIR/../Thinkpad"
 SNAPSHOT_CONFIG="$SNAPSHOT_ROOT/config"
 SNAPSHOT_SOLACE="$SNAPSHOT_ROOT/local/share/solace"
+SNAPSHOT_FONTS="$SNAPSHOT_ROOT/local/share/fonts"
 CONFIG_HOME="$HOME/.config"
 LOCAL_SHARE_HOME="$HOME/.local/share/solace"
 BIN_HOME="$HOME/.local/bin"
+FONT_HOME="$HOME/.local/share/fonts"
 
 shopt -s nullglob
 
@@ -96,6 +98,35 @@ install_script_helpers() {
     [[ -e "$helper" || -L "$helper" ]] || continue
     install_executable "$helper" "$BIN_HOME/$(basename "$helper")"
   done
+}
+
+install_snapshot_fonts() {
+  local font
+  local installed_solace_font=0
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: would install bundled fonts into $FONT_HOME"
+  fi
+
+  if [[ -d "$SNAPSHOT_FONTS" ]]; then
+    for font in "$SNAPSHOT_FONTS"/*.{ttf,otf}; do
+      [[ -e "$font" || -L "$font" ]] || continue
+      safe_copy "$font" "$FONT_HOME/$(basename "$font")"
+      [[ "$(basename "$font")" == "solace.ttf" ]] && installed_solace_font=1
+    done
+  fi
+
+  if [[ "$installed_solace_font" -eq 0 && -f "$SNAPSHOT_SOLACE/config/solace.ttf" ]]; then
+    safe_copy "$SNAPSHOT_SOLACE/config/solace.ttf" "$FONT_HOME/solace.ttf"
+  elif [[ "$installed_solace_font" -eq 0 && -f "$SNAPSHOT_CONFIG/solace.ttf" ]]; then
+    safe_copy "$SNAPSHOT_CONFIG/solace.ttf" "$FONT_HOME/solace.ttf"
+  fi
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: fc-cache -f $FONT_HOME"
+  elif command -v fc-cache >/dev/null 2>&1; then
+    fc-cache -f "$FONT_HOME"
+  fi
 }
 
 copy_snapshot_entry() {
@@ -260,6 +291,7 @@ seed_desktop_background() {
 
 install_snapshot_config
 install_snapshot_solace_assets
+install_snapshot_fonts
 sanitize_installed_hypr_defaults
 seed_hypr_toggle_state
 seed_desktop_background

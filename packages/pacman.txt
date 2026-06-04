@@ -52,8 +52,12 @@ wl-clipboard
 grim
 slurp
 mpv
+fontconfig
 noto-fonts
+noto-fonts-cjk
 noto-fonts-emoji
+ttf-jetbrains-mono-nerd
+woff2-font-awesome
 brightnessctl
 swaybg
 swayosd
