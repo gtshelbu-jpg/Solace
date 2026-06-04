@@ -7,7 +7,7 @@ shopt -s nullglob
 
 usage() {
   cat <<EOF
-Usage: install.sh [--dry-run] [--only <packages|configs|services|postinstall>]
+Usage: install.sh [--dry-run] [--only <packages|configs|services|login|postinstall>]
 
 Runs the numbered install scripts in $SCRIPT_DIR.
 EOF
@@ -42,6 +42,7 @@ for s in "${SCRIPTS[@]}"; do
       packages) [[ "$name" == 10-* ]] || continue;;
       configs)  [[ "$name" == 20-* ]] || continue;;
       services) [[ "$name" == 30-* ]] || continue;;
+      login) [[ "$name" == 35-* ]] || continue;;
       postinstall) [[ "$name" == 40-* ]] || continue;;
       *) die "Unknown --only value: $ONLY";;
     esac

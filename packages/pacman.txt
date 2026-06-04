@@ -21,6 +21,9 @@ networkmanager
 git
 jq
 hyprland
+sddm
+plymouth
+qt6-wayland
 waybar
 alacritty
 foot

@@ -12,10 +12,11 @@ Run full install (will call `sudo pacman -Syu` for system packages):
 ./install/install.sh
 ```
 
-Run only packages or configs:
+Run only packages, configs, or login setup:
 ```bash
 ./install/install.sh --only packages
 ./install/install.sh --only configs
+./install/install.sh --only login
 ```
 
 Backups of overwritten files are stored in `~/.config-backups/solace-TIMESTAMP/`.
@@ -23,3 +24,5 @@ Backups of overwritten files are stored in `~/.config-backups/solace-TIMESTAMP/`
 - AUR packages require an AUR helper. If neither `paru` nor `yay` is present, the installer will bootstrap `yay` from the AUR.
 - Monitor-specific configs are left under `machine/thinkpad/` and are not applied automatically.
 - This repo does not partition disks, install bootloaders, or add Omarchy repos/mirrors.
+- The login step enables SDDM, installs a Solace Wayland session, and updates initramfs for Plymouth support.
+- Plymouth splash still depends on your bootloader cmdline already exposing the normal splash-friendly flags; this repo does not change bootloader config.

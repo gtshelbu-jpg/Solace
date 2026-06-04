@@ -41,6 +41,7 @@ Solace/
 │   ├── 10-packages.sh
 │   ├── 20-configs.sh
 │   ├── 30-services.sh
+│   ├── 35-login.sh
 │   └── 40-postinstall.sh
 └── README.md
 ```
@@ -52,7 +53,8 @@ This repo is a post-install bootstrap for an already-installed Arch Linux system
 1. `install/10-packages.sh` installs official repo packages from `packages/pacman.txt`, bootstraps `yay` if needed, and installs AUR packages from `packages/aur.txt`.
 2. `install/20-configs.sh` backs up existing config and links or copies the reusable config into the current user account.
 3. `install/30-services.sh` enables only safe, generic services.
-4. `install/40-postinstall.sh` performs light finishing steps and prints follow-up guidance.
+4. `install/35-login.sh` provisions the SDDM login manager, Solace Wayland session, and Plymouth boot support.
+5. `install/40-postinstall.sh` performs light finishing steps and prints follow-up guidance.
 
 ### Usage
 
@@ -73,6 +75,7 @@ Run just packages or configs:
 ```bash
 ./install/install.sh --only packages
 ./install/install.sh --only configs
+./install/install.sh --only login
 ```
 
 Backups of overwritten files are stored under `~/.config-backups/solace-TIMESTAMP/`.

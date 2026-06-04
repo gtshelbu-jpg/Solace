@@ -9,5 +9,6 @@ Top-level config categories (each folder is a place to put reusable, distro-agno
 - `notifications/` — Mako or dunst configs
 - `shell/` — shell profiles, fish/zsh scripts
 - `themes/` — theme assets (colors, icons, gtk)
+- `login/` — display manager, greeter, and Wayland session files
 
 When moving files from `Thinkpad/`, prefer placing machine-specific monitor or hardware files in `machine/thinkpad/`.
