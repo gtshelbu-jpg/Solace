@@ -1,0 +1,65 @@
+{
+  "palette": {
+    "colors": [
+      "#0f1523",
+      "#87817c",
+      "#8c958e",
+      "#9cb1a5",
+      "#868daf",
+      "#9b98ae",
+      "#9fe4f5",
+      "#e6f9fd",
+      "#76809a",
+      "#b9b5b2",
+      "#c3c8c4",
+      "#d8e1db",
+      "#c4c9db",
+      "#d5d4df",
+      "#ffffff",
+      "#ffffff"
+    ],
+    "wallpaper": "/home/givan1435/.local/share/aether/wallpapers/wallhaven-x6128o.jpg",
+    "wallpaperUrl": "https://wallhaven.cc/w/x6128o",
+    "wallpaperSource": "wallhaven",
+    "lightMode": false,
+    "lockedColors": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "adjustments": {
+    "vibrance": 0,
+    "contrast": 0,
+    "brightness": 0,
+    "hueShift": 0,
+    "temperature": 0,
+    "gamma": 0.8
+  },
+  "appOverrides": {},
+  "settings": {
+    "includeNeovim": true,
+    "includeVencord": false,
+    "includeZed": false,
+    "includeVscode": false,
+    "includeGtk": false,
+    "lightMode": false,
+    "selectedNeovimConfig": null,
+    "enableAppOverrides": true
+  },
+  "timestamp": 1771749703770,
+  "name": "Sunny_Beach"
+}

@@ -1,0 +1,65 @@
+{
+  "palette": {
+    "colors": [
+      "#101017",
+      "#D26261",
+      "#9ba196",
+      "#b7ab8f",
+      "#9a9fbc",
+      "#bda8ba",
+      "#98b8dd",
+      "#C9A5A5",
+      "#7b7b91",
+      "#e9a6a5",
+      "#c9cdc6",
+      "#dcd5c6",
+      "#d0d3e1",
+      "#e5dce4",
+      "#dce7f5",
+      "#ecdede"
+    ],
+    "wallpaper": "/home/givan1435/.local/share/aether/wallpapers/wallhaven-k9p8l6.jpg",
+    "wallpaperUrl": "https://wallhaven.cc/w/k9p8l6",
+    "wallpaperSource": "wallhaven",
+    "lightMode": false,
+    "lockedColors": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "adjustments": {
+    "vibrance": 0,
+    "contrast": 0,
+    "brightness": 0,
+    "hueShift": 0,
+    "temperature": 0,
+    "gamma": 1
+  },
+  "appOverrides": {},
+  "settings": {
+    "includeNeovim": true,
+    "includeVencord": false,
+    "includeZed": false,
+    "includeVscode": false,
+    "includeGtk": false,
+    "lightMode": false,
+    "selectedNeovimConfig": null,
+    "enableAppOverrides": true
+  },
+  "timestamp": 1771750778496,
+  "name": "Muted_Landscape"
+}

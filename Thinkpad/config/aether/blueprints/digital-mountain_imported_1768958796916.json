@@ -1,0 +1,37 @@
+{
+  "name": "digital-mountain",
+  "palette": {
+    "colors": [
+      "#0e0f11",
+      "#e8b0cc",
+      "#8dabd4",
+      "#e7b1ce",
+      "#7e7ece",
+      "#cd7ece",
+      "#7e96ce",
+      "#fafaf9",
+      "#9ba0b0",
+      "#eaaec9",
+      "#b5c8e3",
+      "#eaaece",
+      "#7e7ece",
+      "#d798d8",
+      "#8199cf",
+      "#faf9f9"
+    ],
+    "lightMode": false,
+    "appOverrides": {},
+    "wallpaperUrl": "https://aether-web.hel1.your-objectstorage.com/KV7pgvEsh8b4jCTrYyfMo0uoswHUPRQw-1764720880874-wallpaper-1764720880874.jpg"
+  },
+  "timestamp": 1768958796916,
+  "settings": {
+    "includeNeovim": true,
+    "includeVencord": false,
+    "includeZed": false,
+    "includeVscode": false,
+    "includeGtk": false,
+    "lightMode": false,
+    "selectedNeovimConfig": null,
+    "enableAppOverrides": true
+  }
+}

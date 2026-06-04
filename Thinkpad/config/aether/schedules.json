@@ -1,0 +1,48 @@
+{
+  "schedules": [
+    {
+      "id": "schedule_1770649576185_nsbwvijm5",
+      "blueprintName": "Lotus_CustomWall",
+      "time": "07:30",
+      "enabled": true,
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "createdAt": 1770649576185,
+      "modifiedAt": 1771700076362
+    },
+    {
+      "id": "schedule_1770654114750_7md2txv2n",
+      "blueprintName": "Sunny_Beach",
+      "time": "06:00",
+      "enabled": true,
+      "days": [
+        0,
+        6
+      ],
+      "createdAt": 1770654114750,
+      "modifiedAt": 1771751051215
+    },
+    {
+      "id": "schedule_1771700174515_qsuoau2gf",
+      "blueprintName": "Golden_Hour",
+      "time": "17:30",
+      "enabled": true,
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "createdAt": 1771700174515,
+      "modifiedAt": 1771751039768
+    }
+  ],
+  "version": 1,
+  "lastModified": 1771751051215
+}

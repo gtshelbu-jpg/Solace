@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=IntelliJ IDEA 2025.3.2
+Exec="/home/givan1435/.local/share/JetBrains/Toolbox/apps/intellij-idea/bin/idea" %u
+Version=1.0
+Type=Application
+Categories=Development;IDE;
+Terminal=false
+Icon=/home/givan1435/.local/share/JetBrains/Toolbox/dotDesktopIcons/jetbrains-idea-594f9a85-a00c-446e-98aa-542cc71d661e.desktop.icon.svg
+Comment=The IDE for pro Java and Kotlin development
+StartupWMClass=jetbrains-idea
+StartupNotify=true

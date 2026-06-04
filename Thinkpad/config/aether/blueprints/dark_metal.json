@@ -1,0 +1,65 @@
+{
+  "palette": {
+    "colors": [
+      "#131518",
+      "#bb816d",
+      "#DCE5EC",
+      "#CABEB3",
+      "#8c99ca",
+      "#b6afb2",
+      "#BAC6D5",
+      "#F9FBFC",
+      "#81878f",
+      "#dab6a9",
+      "#ffffff",
+      "#f0ece9",
+      "#c9d0e8",
+      "#e2dfe0",
+      "#f3f5f8",
+      "#ffffff"
+    ],
+    "wallpaper": "/home/givan1435/.local/share/aether/wallpapers/wallhaven-gpjm3d.png",
+    "wallpaperUrl": "https://wallhaven.cc/w/gpjm3d",
+    "wallpaperSource": "wallhaven",
+    "lightMode": false,
+    "lockedColors": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "adjustments": {
+    "vibrance": 0,
+    "contrast": 0,
+    "brightness": 0,
+    "hueShift": 0,
+    "temperature": 0,
+    "gamma": 1
+  },
+  "appOverrides": {},
+  "settings": {
+    "includeNeovim": true,
+    "includeVencord": false,
+    "includeZed": false,
+    "includeVscode": false,
+    "includeGtk": false,
+    "lightMode": false,
+    "selectedNeovimConfig": null,
+    "enableAppOverrides": true
+  },
+  "timestamp": 1771750176413,
+  "name": "Dark_Metal"
+}

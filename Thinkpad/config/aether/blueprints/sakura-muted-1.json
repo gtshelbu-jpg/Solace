@@ -1,0 +1,65 @@
+{
+  "palette": {
+    "colors": [
+      "#1f1b2c",
+      "#9670e7",
+      "#d268e2",
+      "#ce74e5",
+      "#de6bda",
+      "#76bbde",
+      "#c8a2ed",
+      "#fefefe",
+      "#a292bf",
+      "#ab8bf2",
+      "#e8adf1",
+      "#e7b8f3",
+      "#c7f2d5",
+      "#8fccea",
+      "#ddf9da",
+      "#fefefe"
+    ],
+    "wallpaper": "/home/givan1435/Wallpapers/a_mountain_range_with_trees_and_a_valley.jpg",
+    "wallpaperUrl": null,
+    "wallpaperSource": "local",
+    "lightMode": false,
+    "lockedColors": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "adjustments": {
+    "vibrance": 10,
+    "contrast": 0,
+    "brightness": 5,
+    "hueShift": 0,
+    "temperature": 0,
+    "gamma": 1.1
+  },
+  "appOverrides": {},
+  "settings": {
+    "includeNeovim": true,
+    "includeVencord": false,
+    "includeZed": false,
+    "includeVscode": false,
+    "includeGtk": false,
+    "lightMode": false,
+    "selectedNeovimConfig": null,
+    "enableAppOverrides": true
+  },
+  "timestamp": 1770653421233,
+  "name": "Sakura-Muted-1"
+}

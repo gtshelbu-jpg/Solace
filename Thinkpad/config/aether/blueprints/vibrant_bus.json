@@ -1,0 +1,65 @@
+{
+  "palette": {
+    "colors": [
+      "#1D1822",
+      "#D1646D",
+      "#C5D4CD",
+      "#C19567",
+      "#A3A1D5",
+      "#DDA7D9",
+      "#5CA8D1",
+      "#ECE5E6",
+      "#908699",
+      "#e9a8ad",
+      "#fafbfa",
+      "#dec3a6",
+      "#e0e0f2",
+      "#f7e9f6",
+      "#a0cfe8",
+      "#ffffff"
+    ],
+    "wallpaper": "/home/givan1435/.local/share/aether/wallpapers/wallhaven-g75kqe.jpg",
+    "wallpaperUrl": "https://wallhaven.cc/w/g75kqe",
+    "wallpaperSource": "wallhaven",
+    "lightMode": false,
+    "lockedColors": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "adjustments": {
+    "vibrance": 0,
+    "contrast": 0,
+    "brightness": 0,
+    "hueShift": 0,
+    "temperature": 0,
+    "gamma": 1
+  },
+  "appOverrides": {},
+  "settings": {
+    "includeNeovim": true,
+    "includeVencord": false,
+    "includeZed": false,
+    "includeVscode": false,
+    "includeGtk": false,
+    "lightMode": false,
+    "selectedNeovimConfig": null,
+    "enableAppOverrides": true
+  },
+  "timestamp": 1771750567664,
+  "name": "Vibrant_Bus"
+}

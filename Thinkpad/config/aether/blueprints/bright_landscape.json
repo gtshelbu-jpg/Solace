@@ -1,0 +1,65 @@
+{
+  "palette": {
+    "colors": [
+      "#0e0e14",
+      "#914347",
+      "#91b175",
+      "#b0cd80",
+      "#6c7a9c",
+      "#ac807a",
+      "#509ff5",
+      "#e5e8eb",
+      "#747582",
+      "#c08688",
+      "#d4e2c6",
+      "#edf5e0",
+      "#b4bdd1",
+      "#e0ccc9",
+      "#bddfff",
+      "#ffffff"
+    ],
+    "wallpaper": "/home/givan1435/.local/share/aether/wallpapers/wallhaven-2yoyj9.jpg",
+    "wallpaperUrl": "https://wallhaven.cc/w/2yoyj9",
+    "wallpaperSource": "wallhaven",
+    "lightMode": false,
+    "lockedColors": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "adjustments": {
+    "vibrance": 0,
+    "contrast": 0,
+    "brightness": 0,
+    "hueShift": 0,
+    "temperature": 0,
+    "gamma": 0.6
+  },
+  "appOverrides": {},
+  "settings": {
+    "includeNeovim": true,
+    "includeVencord": false,
+    "includeZed": false,
+    "includeVscode": false,
+    "includeGtk": false,
+    "lightMode": false,
+    "selectedNeovimConfig": null,
+    "enableAppOverrides": true
+  },
+  "timestamp": 1771750705097,
+  "name": "Bright_Landscape"
+}

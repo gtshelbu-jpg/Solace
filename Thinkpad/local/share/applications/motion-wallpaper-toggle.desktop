@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Motion Wallpaper
+Comment=Toggle animated video wallpaper on/off
+Exec=/home/givan1435/.local/bin/motion-wallpaper-toggle
+Icon=preferences-desktop-wallpaper
+Terminal=false
+Categories=Utility;Settings;DesktopSettings;
+Keywords=wallpaper;video;animated;background;
