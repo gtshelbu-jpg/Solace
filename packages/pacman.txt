@@ -57,4 +57,4 @@ noto-fonts-emoji
 brightnessctl
 swaybg
 swayosd
-xdg-terminal-exec
+hyprpicker

@@ -130,6 +130,7 @@ install_snapshot_config() {
     solace \
     starship.toml \
     swayosd \
+    systemd \
     tmux \
     uwsm \
     walker \
@@ -198,8 +199,7 @@ install_snapshot_bins() {
         if [[ "$DRY_RUN" -eq 1 ]]; then
           log "DRY: would link helper $link_src -> $BIN_HOME/$(basename "$src")"
         else
-          mkdir -p "$BIN_HOME"
-          ln -sfn "$link_src" "$BIN_HOME/$(basename "$src")"
+          safe_link "$link_src" "$BIN_HOME/$(basename "$src")"
         fi
         ;;
     esac

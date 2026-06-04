@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+terminal="${TERMINAL:-}"
+if [[ -z "$terminal" || "$terminal" == "xdg-terminal-exec" ]]; then
+  for candidate in alacritty foot kitty ghostty; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      terminal="$candidate"
+      break
+    fi
+  done
+fi
+
+[[ -n "$terminal" ]] || {
+  printf 'xdg-terminal-exec: no terminal found\n' >&2
+  exit 127
+}
+
+dir=""
+app_id=""
+print_id=0
+cmd=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --print-id)
+      print_id=1
+      shift
+      ;;
+    --dir)
+      [[ $# -ge 2 ]] || { printf 'xdg-terminal-exec: --dir requires a value\n' >&2; exit 2; }
+      dir="$2"
+      shift 2
+      ;;
+    --dir=*)
+      dir="${1#--dir=}"
+      shift
+      ;;
+    --app-id|--title)
+      [[ $# -ge 2 ]] || { printf 'xdg-terminal-exec: %s requires a value\n' "$1" >&2; exit 2; }
+      app_id="$2"
+      shift 2
+      ;;
+    --app-id=*|--title=*)
+      app_id="${1#*=}"
+      shift
+      ;;
+    -e)
+      shift
+      cmd=("$@")
+      break
+      ;;
+    --)
+      shift
+      cmd=("$@")
+      break
+      ;;
+    *)
+      cmd=("$@")
+      break
+      ;;
+  esac
+done
+
+if [[ "$print_id" -eq 1 ]]; then
+  printf '%s\n' "${app_id:-$terminal}"
+  exit 0
+fi
+
+terminal_args=()
+case "$(basename "$terminal")" in
+  alacritty)
+    [[ -n "$dir" ]] && terminal_args+=(--working-directory "$dir")
+    [[ -n "$app_id" ]] && terminal_args+=(--class "$app_id")
+    [[ ${#cmd[@]} -gt 0 ]] && terminal_args+=(-e "${cmd[@]}")
+    ;;
+  foot|footclient)
+    [[ -n "$dir" ]] && terminal_args+=(--working-directory="$dir")
+    [[ -n "$app_id" ]] && terminal_args+=(--app-id="$app_id")
+    [[ ${#cmd[@]} -gt 0 ]] && terminal_args+=("${cmd[@]}")
+    ;;
+  kitty)
+    [[ -n "$dir" ]] && terminal_args+=(--directory "$dir")
+    [[ -n "$app_id" ]] && terminal_args+=(--class "$app_id")
+    [[ ${#cmd[@]} -gt 0 ]] && terminal_args+=("${cmd[@]}")
+    ;;
+  ghostty)
+    [[ -n "$dir" ]] && terminal_args+=(--working-directory="$dir")
+    [[ -n "$app_id" ]] && terminal_args+=(--class="$app_id")
+    [[ ${#cmd[@]} -gt 0 ]] && terminal_args+=(-e "${cmd[@]}")
+    ;;
+  *)
+    [[ ${#cmd[@]} -gt 0 ]] && terminal_args+=(-e "${cmd[@]}")
+    ;;
+esac
+
+exec "$terminal" "${terminal_args[@]}"

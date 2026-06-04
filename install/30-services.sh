@@ -9,6 +9,11 @@ if [[ ${1:-} == "--dry-run" ]]; then
 fi
 
 SYSTEM_SERVICES=("NetworkManager.service")
+USER_SERVICES=(
+  "elephant.service"
+  "solace-recover-internal-monitor.service"
+  "swayosd-server.service"
+)
 
 for service_name in "${SYSTEM_SERVICES[@]}"; do
   if [[ "$DRY_RUN" -eq 1 ]]; then
@@ -18,4 +23,24 @@ for service_name in "${SYSTEM_SERVICES[@]}"; do
   fi
 done
 
-log "System services configured; user-session audio and portal services are handled by the desktop session."
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  log "DRY: systemctl --user daemon-reload"
+else
+  systemctl --user daemon-reload || warn "Could not reload user systemd manager; user services will be picked up after login."
+fi
+
+for service_name in "${USER_SERVICES[@]}"; do
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: systemctl --user enable $service_name"
+  else
+    systemctl --user enable "$service_name" || warn "Could not enable user service: $service_name"
+  fi
+done
+
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  log "DRY: systemctl --user enable --now solace-battery-monitor.timer if a battery is present"
+elif compgen -G "/sys/class/power_supply/BAT*" >/dev/null; then
+  systemctl --user enable --now solace-battery-monitor.timer || warn "Could not enable battery monitor timer."
+fi
+
+log "System and user services configured."
