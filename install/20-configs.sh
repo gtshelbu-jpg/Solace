@@ -9,6 +9,7 @@ if [[ ${1:-} == "--dry-run" ]]; then
 fi
 
 CONFIG_ROOT="$SCRIPT_DIR/../config"
+SNAPSHOT_ROOT="$SCRIPT_DIR/../Thinkpad"
 CONFIG_HOME="$HOME/.config"
 LOCAL_SHARE_HOME="$HOME/.local/share/solace"
 BIN_HOME="$HOME/.local/bin"
@@ -95,6 +96,24 @@ install_script_helpers() {
   done
 }
 
+install_snapshot_tree() {
+  local src_dir="$1"
+  local dest_dir="$2"
+
+  [[ -d "$src_dir" ]] || return 0
+
+  local entries=("$src_dir"/*)
+  if [[ ${#entries[@]} -eq 0 ]]; then
+    log "Skipping empty snapshot tree: $src_dir"
+    return 0
+  fi
+
+  for src in "${entries[@]}"; do
+    [[ -e "$src" || -L "$src" ]] || continue
+    safe_copy "$src" "$dest_dir/$(basename "$src")"
+  done
+}
+
 install_directory_contents "$CONFIG_ROOT/hypr" "$CONFIG_HOME/hypr"
 install_directory_contents "$CONFIG_ROOT/waybar" "$CONFIG_HOME/waybar"
 install_directory_contents "$CONFIG_ROOT/launcher" "$CONFIG_HOME/launcher"
@@ -103,5 +122,9 @@ install_directory_contents "$CONFIG_ROOT/themes" "$LOCAL_SHARE_HOME/themes" copy
 install_terminal_configs
 install_notification_configs
 install_script_helpers
+
+log "Overlaying Thinkpad snapshot config trees"
+install_snapshot_tree "$SNAPSHOT_ROOT/config" "$CONFIG_HOME"
+install_snapshot_tree "$SNAPSHOT_ROOT/local/share/solace" "$LOCAL_SHARE_HOME"
 
 log "Configs installed (or simulated in dry-run)"

@@ -28,4 +28,5 @@ Backups of overwritten files are stored in `~/.config-backups/solace-TIMESTAMP/`
 - This repo does not partition disks, install bootloaders, or add Omarchy repos/mirrors.
 - The login step enables SDDM, installs a Solace Wayland session, and updates initramfs for Plymouth support.
 - The login step also installs and sets `plymouth-theme-ecorp-glitch` as the default Plymouth theme.
+- The installer overlays the snapshot trees from `Thinkpad/config` into `~/.config` and `Thinkpad/local/share/solace` into `~/.local/share/solace` so the fuller Hyprland defaults and helper assets are available.
 - Plymouth splash still depends on your bootloader cmdline already exposing the normal splash-friendly flags; this repo does not change bootloader config.
