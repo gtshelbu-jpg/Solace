@@ -223,9 +223,46 @@ sanitize_installed_hypr_defaults() {
     "$looknfeel"
 }
 
+seed_hypr_toggle_state() {
+  local state_dir="$HOME/.local/state/solace/toggles/hypr"
+  local state_flags="$state_dir/flags.conf"
+  local default_flags="$LOCAL_SHARE_HOME/default/hypr/toggles/flags.conf"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: would seed Hyprland toggle state placeholder at $state_flags"
+    return 0
+  fi
+
+  mkdir -p "$state_dir"
+  [[ -f "$state_flags" ]] && return 0
+
+  if [[ -f "$default_flags" ]]; then
+    cp -a -- "$default_flags" "$state_flags"
+  else
+    printf '# Placeholder so Hyprland toggle source glob always has a match.\n' >"$state_flags"
+  fi
+}
+
+seed_desktop_background() {
+  local current_background="$CONFIG_HOME/solace/current/background"
+  local default_background="$CONFIG_HOME/solace/current/theme/backgrounds/wallhaven-dpepjo.jpg"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: would seed desktop background at $current_background"
+    return 0
+  fi
+
+  [[ -e "$current_background" || -L "$current_background" ]] && return 0
+  [[ -f "$default_background" ]] || return 0
+
+  ln -s "$(realpath --relative-to="$(dirname "$current_background")" "$default_background")" "$current_background"
+}
+
 install_snapshot_config
 install_snapshot_solace_assets
 sanitize_installed_hypr_defaults
+seed_hypr_toggle_state
+seed_desktop_background
 install_script_helpers
 
 log "Configs installed (or simulated in dry-run)"
