@@ -264,9 +264,8 @@ show_hardware_touchpad_haptics_menu() {
 }
 
 show_style_menu() {
-  case $(menu "Style" "󰸌  Theme\n󰟵  Unlock\n  Font\n  Background\n  Hyprland\n󱄄  Screensaver\n  About") in
+  case $(menu "Style" "󰸌  Theme\n  Font\n  Background\n  Hyprland\n󱄄  Screensaver\n  About") in
   *Theme*) show_theme_menu ;;
-  *Unlock*) solace-launch-walker -m menus:solaceunlocks --width 800 --minheight 400 ;;
   *Font*) show_font_menu ;;
   *Background*) show_background_menu ;;
   *Hyprland*) open_in_editor ~/.config/hypr/looknfeel.conf ;;
@@ -794,12 +793,11 @@ show_update_process_menu() {
 }
 
 show_update_config_menu() {
-  case $(menu "Use default config" "  Hyprland\n  Hypridle\n  Hyprlock\n  Hyprsunset\n󱣴  Plymouth\n  Swayosd\n  Tmux\n󰌧  Walker\n󰍜  Waybar") in
+  case $(menu "Use default config" "  Hyprland\n  Hypridle\n  Hyprlock\n  Hyprsunset\n  Swayosd\n  Tmux\n󰌧  Walker\n󰍜  Waybar") in
   *Hyprland*) present_terminal solace-refresh-hyprland ;;
   *Hypridle*) present_terminal solace-refresh-hypridle ;;
   *Hyprlock*) present_terminal solace-refresh-hyprlock ;;
   *Hyprsunset*) present_terminal solace-refresh-hyprsunset ;;
-  *Plymouth*) present_terminal solace-refresh-plymouth ;;
   *Swayosd*) present_terminal solace-refresh-swayosd ;;
   *Tmux*) present_terminal solace-refresh-tmux ;;
   *Walker*) present_terminal solace-refresh-walker ;;

@@ -15,7 +15,7 @@ are the important source-to-destination mappings:
 | `Thinkpad/config/<name>` | `~/.config/<name>` | User config for Hyprland, Waybar, terminals, GTK, Walker, etc. |
 | `Thinkpad/local/share/solace/applications` | `~/.local/share/solace/applications` | Desktop entries and app icons managed by Solace helpers. |
 | `Thinkpad/local/share/solace/config` | `~/.local/share/solace/config` | Default config templates used by refresh helpers. |
-| `Thinkpad/local/share/solace/default` | `~/.local/share/solace/default` | Shared defaults, Hyprland modules, Waybar scripts, Plymouth/SDDM assets. |
+| `Thinkpad/local/share/solace/default` | `~/.local/share/solace/default` | Shared defaults, Hyprland modules, Waybar scripts, and SDDM assets. |
 | `Thinkpad/local/share/solace/themes` | `~/.local/share/solace/themes` | Bundled themes and wallpapers. |
 | `Thinkpad/local/share/solace/bin` | `~/.local/share/solace/bin` | Solace helper scripts. Most are symlinked into `~/.local/bin`. |
 | `Thinkpad/local/share/fonts` | `~/.local/share/fonts` | Bundled local fonts, including `solace.ttf`. |
@@ -141,22 +141,22 @@ The lock screen background uses the same current wallpaper symlink:
 
 - `~/.config/solace/current/background`
 
-## Plymouth And SDDM
+## SDDM Login
 
-Login and boot visuals are installed by [install/35-login.sh](install/35-login.sh).
+Login visuals are installed by [install/35-login.sh](install/35-login.sh).
+Bootloader and boot splash configuration is intentionally not managed.
 
 Source files:
 
 | Repo source | Installed destination |
 | --- | --- |
-| `Thinkpad/local/share/solace/default/plymouth` | `/usr/share/plymouth/themes/solace` |
 | `Thinkpad/local/share/solace/default/sddm/solace` | `/usr/share/sddm/themes/solace` |
 | `config/login/sddm/10-wayland.conf` | `/etc/sddm.conf.d/10-wayland.conf` |
 | `config/login/sddm/hyprland.conf` | `/usr/share/sddm/hyprland.conf` |
 | `config/login/wayland-sessions/solace.desktop` | `/usr/local/share/wayland-sessions/solace.desktop` |
 
-To change boot/login visuals, edit the Plymouth or SDDM theme source under
-`Thinkpad/local/share/solace/default`.
+To change login visuals, edit the SDDM theme source under
+`Thinkpad/local/share/solace/default/sddm`.
 
 ## Terminal And App Config
 
@@ -267,12 +267,16 @@ The config installer skips these top-level default asset directories:
 
 - `limine`
 - `pacman`
+- `plymouth`
 - `snapper`
 - `systemd`
 - `udev`
 
 Those are kept in the snapshot for reference, but they are not copied into
 `~/.local/share/solace/default` by the default config install.
+
+Bootloader, storage, hibernation, snapshot, Plymouth, and direct-boot helper
+scripts are also removed from the installed Solace helper path.
 
 ## Test Changes
 

@@ -217,7 +217,7 @@ install_snapshot_default_assets() {
   for name in "$SNAPSHOT_SOLACE/default"/*; do
     [[ -e "$name" || -L "$name" ]] || continue
     case "$(basename "$name")" in
-      limine|pacman|snapper|systemd|udev)
+      limine|pacman|plymouth|snapper|systemd|udev)
         log "Skipping unsafe default asset: $name"
         ;;
       *)
@@ -237,24 +237,29 @@ install_snapshot_bins() {
   for src in "$SNAPSHOT_SOLACE/bin"/*; do
     [[ -e "$src" || -L "$src" ]] || continue
     link_src="$LOCAL_SHARE_HOME/bin/$(basename "$src")"
+    case "$(basename "$src")" in
+      *pacman*|*limine*|*direct-boot*|*drive*|*hibernation*|*plymouth*|*snapshot*)
+        if [[ "$DRY_RUN" -eq 1 ]]; then
+          log "DRY: would remove boot/storage helper from installed bin: $link_src"
+        else
+          rm -f -- "$link_src"
+        fi
+        log "Skipping boot/storage helper: $link_src"
+        continue
+        ;;
+    esac
+
     if [[ "$DRY_RUN" -eq 1 ]]; then
       log "DRY: chmod +x $link_src"
     else
       chmod +x "$link_src" || true
     fi
 
-    case "$(basename "$src")" in
-      *pacman*|*limine*|*direct-boot*|*drive*|*hibernation*|*snapshot*)
-        log "Leaving potentially system-destructive helper out of PATH: $link_src"
-        ;;
-      *)
-        if [[ "$DRY_RUN" -eq 1 ]]; then
-          log "DRY: would link helper $link_src -> $BIN_HOME/$(basename "$src")"
-        else
-          safe_link "$link_src" "$BIN_HOME/$(basename "$src")"
-        fi
-        ;;
-    esac
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      log "DRY: would link helper $link_src -> $BIN_HOME/$(basename "$src")"
+    else
+      safe_link "$link_src" "$BIN_HOME/$(basename "$src")"
+    fi
   done
 }
 

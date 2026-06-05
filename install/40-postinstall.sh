@@ -10,4 +10,3 @@ fi
 
 log "Post-install checks complete."
 log "Log out and back in so Hyprland and user-session services pick up the new config links."
-log "If Plymouth does not appear, verify /etc/mkinitcpio.conf contains the plymouth hook and your kernel cmdline contains: quiet splash"

@@ -44,7 +44,6 @@ libnotify
 libqalculate
 uwsm
 sddm
-plymouth
 polkit-gnome
 power-profiles-daemon
 qt6-wayland
