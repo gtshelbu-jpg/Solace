@@ -7,7 +7,8 @@ if [[ -L /usr/local/bin/xdg-terminal-exec ]]; then
   sudo rm /usr/local/bin/xdg-terminal-exec
 fi
 
-solace-pkg-add xdg-terminal-exec
+# Solace ships xdg-terminal-exec in $SOLACE_PATH/bin instead of relying on an
+# external package that may not exist in every Arch repo/mirror set.
 
 # Set up xdg-terminals.list based on current $TERMINAL
 if [[ -n $TERMINAL ]]; then

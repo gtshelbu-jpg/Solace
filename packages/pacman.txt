@@ -58,7 +58,6 @@ wireplumber
 xdg-desktop-portal
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
-xdg-terminal-exec
 wl-clipboard
 grim
 slurp
