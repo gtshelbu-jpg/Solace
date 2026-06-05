@@ -40,7 +40,8 @@ start_sudo_session() {
   [[ "$DRY_RUN" -eq 0 ]] || return 0
   [[ "${EUID:-$(id -u)}" -ne 0 ]] || return 0
 
-  log "Requesting sudo once for the install run"
+  log "Requesting sudo up front to reduce password prompts during the install"
+  log "Some later steps may still ask for your password; keep this terminal nearby."
   sudo -v
 
   while true; do
