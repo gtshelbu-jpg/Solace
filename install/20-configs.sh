@@ -12,9 +12,13 @@ CONFIG_ROOT="$SCRIPT_DIR/../config"
 SNAPSHOT_ROOT="$SCRIPT_DIR/../Thinkpad"
 SNAPSHOT_CONFIG="$SNAPSHOT_ROOT/config"
 SNAPSHOT_SOLACE="$SNAPSHOT_ROOT/local/share/solace"
+SNAPSHOT_AETHER_SHARE="$SNAPSHOT_ROOT/local/share/aether"
+SNAPSHOT_APPLICATIONS="$SNAPSHOT_ROOT/local/share/applications"
 SNAPSHOT_FONTS="$SNAPSHOT_ROOT/local/share/fonts"
 CONFIG_HOME="$HOME/.config"
 LOCAL_SHARE_HOME="$HOME/.local/share/solace"
+LOCAL_AETHER_SHARE_HOME="$HOME/.local/share/aether"
+LOCAL_APPLICATIONS_HOME="$HOME/.local/share/applications"
 BIN_HOME="$HOME/.local/bin"
 FONT_HOME="$HOME/.local/share/fonts"
 
@@ -158,6 +162,7 @@ install_snapshot_config() {
     kitty \
     mimeapps.list \
     mise \
+    nvim \
     solace \
     starship.toml \
     swayosd \
@@ -176,6 +181,16 @@ install_snapshot_config() {
 
   # Keep monitor layout generic. Explicit display descriptors belong in machine profiles.
   safe_copy "$CONFIG_ROOT/hypr/monitors.conf" "$CONFIG_HOME/hypr/monitors.conf"
+}
+
+install_snapshot_aether_assets() {
+  if [[ -d "$SNAPSHOT_AETHER_SHARE" ]]; then
+    copy_snapshot_entry "$SNAPSHOT_AETHER_SHARE" "$LOCAL_AETHER_SHARE_HOME"
+  fi
+
+  if [[ -f "$SNAPSHOT_APPLICATIONS/aether-protocol-handler.desktop" ]]; then
+    safe_copy "$SNAPSHOT_APPLICATIONS/aether-protocol-handler.desktop" "$LOCAL_APPLICATIONS_HOME/aether-protocol-handler.desktop"
+  fi
 }
 
 install_snapshot_solace_assets() {
@@ -295,12 +310,45 @@ seed_desktop_background() {
   ln -s "$(realpath --relative-to="$(dirname "$current_background")" "$default_background")" "$current_background"
 }
 
+seed_aether_theme_bridge() {
+  local aether_theme="$CONFIG_HOME/aether/theme"
+  local solace_current="$CONFIG_HOME/solace/current"
+  local solace_theme="$solace_current/theme"
+  local theme_name="$solace_current/theme.name"
+  local current_background="$solace_current/background"
+  local first_background
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: would bridge Aether theme output into Solace current theme"
+    return 0
+  fi
+
+  [[ -d "$aether_theme" ]] || return 0
+
+  mkdir -p "$solace_current"
+  rm -rf -- "$solace_theme"
+  ln -sfn "$aether_theme" "$solace_theme"
+  printf 'aether\n' >"$theme_name"
+
+  mkdir -p "$CONFIG_HOME/btop/themes" "$CONFIG_HOME/mako" "$CONFIG_HOME/zed/themes"
+  ln -sfn "$CONFIG_HOME/solace/current/theme/btop.theme" "$CONFIG_HOME/btop/themes/current.theme"
+  ln -sfn "$CONFIG_HOME/solace/current/theme/mako.ini" "$CONFIG_HOME/mako/config"
+  ln -sfn "$CONFIG_HOME/solace/current/theme/aether.zed.json" "$CONFIG_HOME/zed/themes/aether.json"
+
+  if [[ ! -e "$current_background" && ! -L "$current_background" ]]; then
+    first_background="$(find -L "$aether_theme/backgrounds" -maxdepth 1 -type f 2>/dev/null | sort | head -n1 || true)"
+    [[ -n "$first_background" ]] && ln -sfn "$first_background" "$current_background"
+  fi
+}
+
 install_snapshot_config
 install_snapshot_solace_assets
+install_snapshot_aether_assets
 install_snapshot_fonts
 sanitize_installed_hypr_defaults
 seed_hypr_toggle_state
 seed_desktop_background
+seed_aether_theme_bridge
 install_script_helpers
 
 log "Configs installed (or simulated in dry-run)"

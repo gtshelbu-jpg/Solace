@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# solace:summary=Sync Aether's generated theme output into Solace's active theme path
+# solace:args=[aether-theme-dir]
+
+set -euo pipefail
+
+AETHER_THEME_DIR="${1:-$HOME/.config/aether/theme}"
+SOLACE_CURRENT_DIR="$HOME/.config/solace/current"
+SOLACE_THEME_LINK="$SOLACE_CURRENT_DIR/theme"
+SOLACE_THEME_NAME="$SOLACE_CURRENT_DIR/theme.name"
+SOLACE_BACKGROUND_LINK="$SOLACE_CURRENT_DIR/background"
+
+if [[ ! -d "$AETHER_THEME_DIR" ]]; then
+  echo "Aether theme directory does not exist: $AETHER_THEME_DIR" >&2
+  exit 1
+fi
+
+mkdir -p "$SOLACE_CURRENT_DIR"
+rm -rf -- "$SOLACE_THEME_LINK"
+ln -sfn "$AETHER_THEME_DIR" "$SOLACE_THEME_LINK"
+printf 'aether\n' >"$SOLACE_THEME_NAME"
+
+mkdir -p "$HOME/.config/btop/themes" "$HOME/.config/mako" "$HOME/.config/zed/themes"
+ln -sfn "$HOME/.config/solace/current/theme/btop.theme" "$HOME/.config/btop/themes/current.theme"
+ln -sfn "$HOME/.config/solace/current/theme/mako.ini" "$HOME/.config/mako/config"
+ln -sfn "$HOME/.config/solace/current/theme/aether.zed.json" "$HOME/.config/zed/themes/aether.json"
+
+if [[ -d "$AETHER_THEME_DIR/backgrounds" ]]; then
+  background="$(find -L "$AETHER_THEME_DIR/backgrounds" -maxdepth 1 -type f 2>/dev/null | sort | head -n1 || true)"
+  if [[ -n "${background:-}" ]]; then
+    ln -sfn "$background" "$SOLACE_BACKGROUND_LINK"
+    if command -v swaybg >/dev/null 2>&1; then
+      pkill -x swaybg 2>/dev/null || true
+      setsid uwsm-app -- swaybg -i "$SOLACE_BACKGROUND_LINK" -m fill >/dev/null 2>&1 &
+    fi
+  fi
+fi
+
+command -v hyprctl >/dev/null 2>&1 && hyprctl reload >/dev/null 2>&1 || true
+command -v solace-restart-waybar >/dev/null 2>&1 && pgrep -x waybar >/dev/null 2>&1 && solace-restart-waybar || true
+command -v solace-restart-swayosd >/dev/null 2>&1 && solace-restart-swayosd || true
+command -v solace-restart-terminal >/dev/null 2>&1 && solace-restart-terminal || true
+command -v solace-restart-btop >/dev/null 2>&1 && solace-restart-btop || true
+command -v solace-restart-mako >/dev/null 2>&1 && solace-restart-mako || true
+command -v solace-restart-helix >/dev/null 2>&1 && solace-restart-helix || true
+

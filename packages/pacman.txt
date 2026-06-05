@@ -26,6 +26,7 @@ fastfetch
 bluetui
 bluez
 bluez-utils
+chromium
 cliphist
 fd
 fcitx5
@@ -63,6 +64,7 @@ grim
 slurp
 mpv
 pamixer
+neovim
 fontconfig
 noto-fonts
 noto-fonts-cjk
@@ -76,4 +78,7 @@ hyprpicker
 socat
 sqlite
 wiremix
+wofi
 wtype
+zed
+zellij

@@ -4,6 +4,7 @@
 # waybar-hyprland
 
 # Add AUR package names below this line
+aether
 elephant-all-bin
 mpvpaper
 walker-bin

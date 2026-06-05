@@ -5,5 +5,10 @@
 THEME_NAME_PATH="$HOME/.config/solace/current/theme.name"
 
 if [[ -f $THEME_NAME_PATH ]]; then
-  SOLACE_THEME_SKIP_BACKGROUND=1 solace-theme-set "$(cat $THEME_NAME_PATH)"
+  theme_name="$(cat "$THEME_NAME_PATH")"
+  if [[ "$theme_name" == "aether" ]]; then
+    solace-aether-sync
+  else
+    SOLACE_THEME_SKIP_BACKGROUND=1 solace-theme-set "$theme_name"
+  fi
 fi
