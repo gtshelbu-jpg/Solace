@@ -18,10 +18,14 @@
 # Add packages below this line
 base-devel
 networkmanager
+linux-firmware
 git
 jq
 gnome-keyring
+bash-completion
+bat
 btop
+eza
 fastfetch
 bluetui
 bluez
@@ -39,9 +43,11 @@ hyprsunset
 imagemagick
 imv
 impala
+iwd
 libsecret
 libnotify
 libqalculate
+mise
 uwsm
 sddm
 polkit-gnome
@@ -64,6 +70,8 @@ slurp
 mpv
 pamixer
 neovim
+fzf
+gum
 fontconfig
 noto-fonts
 noto-fonts-cjk
@@ -76,9 +84,11 @@ swayosd
 hyprpicker
 socat
 sqlite
+starship
 wiremix
 wofi
 wtype
 zed
 zellij
+zoxide
 nwg-displays

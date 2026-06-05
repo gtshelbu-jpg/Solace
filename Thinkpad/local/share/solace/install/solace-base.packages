@@ -74,6 +74,7 @@ libsecret
 libyaml
 libqalculate
 libreoffice-fresh
+linux-firmware
 llvm
 localsend
 luarocks

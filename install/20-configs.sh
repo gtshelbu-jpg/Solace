@@ -104,6 +104,28 @@ install_script_helpers() {
   done
 }
 
+seed_shell_startup() {
+  local default_bashrc="$SNAPSHOT_SOLACE/default/bashrc"
+  local bash_profile="$HOME/.bash_profile"
+
+  [[ -f "$default_bashrc" ]] || return 0
+
+  safe_copy "$default_bashrc" "$HOME/.bashrc"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: would write $bash_profile to source ~/.bashrc"
+    return 0
+  fi
+
+  if [[ -e "$bash_profile" || -L "$bash_profile" ]]; then
+    backup_target "$bash_profile"
+    rm -rf -- "$bash_profile"
+  fi
+
+  printf '[[ -f ~/.bashrc ]] && . ~/.bashrc\n' >"$bash_profile"
+  log "Wrote $bash_profile"
+}
+
 install_snapshot_fonts() {
   local font
   local installed_solace_font=0
@@ -302,7 +324,7 @@ seed_hypr_toggle_state() {
 
 seed_desktop_background() {
   local current_background="$CONFIG_HOME/solace/current/background"
-  local default_background="$CONFIG_HOME/solace/current/theme/backgrounds/wallhaven-dpepjo.jpg"
+  local default_background
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
     log "DRY: would seed desktop background at $current_background"
@@ -310,7 +332,8 @@ seed_desktop_background() {
   fi
 
   [[ -e "$current_background" || -L "$current_background" ]] && return 0
-  [[ -f "$default_background" ]] || return 0
+  default_background="$(find -L "$CONFIG_HOME/solace/current/theme/backgrounds" -maxdepth 1 -type f 2>/dev/null | sort | head -n1 || true)"
+  [[ -n "$default_background" ]] || return 0
 
   ln -s "$(realpath --relative-to="$(dirname "$current_background")" "$default_background")" "$current_background"
 }
@@ -355,6 +378,7 @@ seed_hypr_toggle_state
 seed_desktop_background
 seed_aether_theme_bridge
 install_script_helpers
+seed_shell_startup
 
 log "Configs installed (or simulated in dry-run)"
 log "Installed Thinkpad-derived Solace UX config with hardware, mirror, and bootloader pieces filtered."
