@@ -34,6 +34,26 @@ if [[ ${#SCRIPTS[@]} -eq 0 ]]; then
   die "No numbered install scripts found in $SCRIPT_DIR"
 fi
 
+SUDO_KEEPALIVE_PID=""
+
+start_sudo_session() {
+  [[ "$DRY_RUN" -eq 0 ]] || return 0
+  [[ "${EUID:-$(id -u)}" -ne 0 ]] || return 0
+
+  log "Requesting sudo once for the install run"
+  sudo -v
+
+  while true; do
+    sleep 60
+    sudo -n -v 2>/dev/null || exit 0
+  done &
+  SUDO_KEEPALIVE_PID="$!"
+
+  trap '[[ -n "${SUDO_KEEPALIVE_PID:-}" ]] && kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true' EXIT
+}
+
+start_sudo_session
+
 for s in "${SCRIPTS[@]}"; do
   [[ -f "$s" ]] || continue
   name="$(basename "$s")"
