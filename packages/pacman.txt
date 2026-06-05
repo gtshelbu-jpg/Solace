@@ -73,6 +73,7 @@ brightnessctl
 swaybg
 swayosd
 hyprpicker
+socat
 sqlite
 wiremix
 wtype

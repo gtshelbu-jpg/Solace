@@ -222,6 +222,12 @@ install_snapshot_bins() {
   for src in "$SNAPSHOT_SOLACE/bin"/*; do
     [[ -e "$src" || -L "$src" ]] || continue
     link_src="$LOCAL_SHARE_HOME/bin/$(basename "$src")"
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      log "DRY: chmod +x $link_src"
+    else
+      chmod +x "$link_src" || true
+    fi
+
     case "$(basename "$src")" in
       *pacman*|*limine*|*direct-boot*|*drive*|*hibernation*|*snapshot*)
         log "Leaving potentially system-destructive helper out of PATH: $link_src"
