@@ -3,100 +3,138 @@ import SddmComponents 2.0
 
 Rectangle {
   id: root
-  width: 640
-  height: 480
-  color: "#1a1b26"
+  width: 1920
+  height: 1080
+  color: "#07090f"
 
   property string currentUser: userModel.lastUser
   property bool loginFailed: false
   property int sessionIndex: {
     for (var i = 0; i < sessionModel.rowCount(); i++) {
       var name = (sessionModel.data(sessionModel.index(i, 0), Qt.DisplayRole) || "").toString()
-      if (name.indexOf("uwsm") !== -1)
+      if (name.indexOf("Solace") !== -1 || name.indexOf("uwsm") !== -1)
         return i
     }
     return sessionModel.lastIndex
   }
 
-  Connections {
-    target: sddm
-    function onLoginFailed() {
-      root.loginFailed = true
-      password.text = ""
-      password.focus = true
-    }
-    function onLoginSucceeded() {
-      root.loginFailed = false
+  Image {
+    anchors.fill: parent
+    source: "background.jpg"
+    fillMode: Image.PreserveAspectCrop
+    smooth: true
+  }
+
+  Rectangle {
+    anchors.fill: parent
+    color: "#07090f"
+    opacity: 0.56
+  }
+
+  Rectangle {
+    anchors.fill: parent
+    gradient: Gradient {
+      GradientStop { position: 0.0; color: "#22070b12" }
+      GradientStop { position: 0.58; color: "#99070b12" }
+      GradientStop { position: 1.0; color: "#dd070b12" }
     }
   }
 
-  Column {
-    anchors.centerIn: parent
-    spacing: 40
+  Text {
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.leftMargin: 44
+    anchors.topMargin: 34
+    text: "Solace"
+    color: "#f6f7fb"
+    opacity: 0.92
+    font.family: "Inter"
+    font.pixelSize: 24
+    font.weight: Font.DemiBold
+  }
 
-    Image {
-      id: logo
-      source: "logo.png"
-      width: Math.min(sourceSize.width, root.width * 0.8)
-      height: sourceSize.width > 0 ? Math.round(width * sourceSize.height / sourceSize.width) : 0
-      fillMode: Image.PreserveAspectFit
-      anchors.horizontalCenter: parent.horizontalCenter
-    }
+  Text {
+    id: clock
+    anchors.right: parent.right
+    anchors.top: parent.top
+    anchors.rightMargin: 44
+    anchors.topMargin: 34
+    text: Qt.formatDateTime(new Date(), "ddd  h:mm AP")
+    color: "#f6f7fb"
+    opacity: 0.78
+    font.family: "Inter"
+    font.pixelSize: 18
+  }
 
-    Row {
-      anchors.horizontalCenter: parent.horizontalCenter
-      spacing: 15
+  Timer {
+    interval: 1000
+    running: true
+    repeat: true
+    onTriggered: clock.text = Qt.formatDateTime(new Date(), "ddd  h:mm AP")
+  }
+
+  Rectangle {
+    id: panel
+    width: Math.min(440, root.width - 64)
+    height: 430
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.rightMargin: Math.max(38, root.width * 0.09)
+    radius: 18
+    color: "#d90b0f17"
+    border.color: root.loginFailed ? "#d96b6b" : "#33ffffff"
+    border.width: 1
+
+    Column {
+      anchors.fill: parent
+      anchors.margins: 34
+      spacing: 18
 
       Image {
-        source: root.loginFailed ? "lock-failed.png" : "lock.png"
-        width: 34
-        height: 38
+        id: logo
+        source: "logo.png"
+        width: Math.min(sourceSize.width, parent.width)
+        height: sourceSize.width > 0 ? Math.round(width * sourceSize.height / sourceSize.width) : 0
         fillMode: Image.PreserveAspectFit
-        anchors.verticalCenter: parent.verticalCenter
+        smooth: true
       }
 
-      Item {
-        width: entry.width
-        height: entry.height
+      Text {
+        text: "Welcome back"
+        color: "#f6f7fb"
+        font.family: "Inter"
+        font.pixelSize: 28
+        font.weight: Font.DemiBold
+      }
 
-        Image {
-          id: entry
-          source: root.loginFailed ? "entry-failed.png" : "entry.png"
-          anchors.centerIn: parent
-        }
+      Text {
+        text: root.currentUser
+        color: "#aeb7c8"
+        font.family: "JetBrainsMono Nerd Font"
+        font.pixelSize: 15
+      }
 
-        Row {
-          anchors.left: parent.left
-          anchors.leftMargin: 20
-          anchors.verticalCenter: parent.verticalCenter
-          spacing: 5
-
-          Repeater {
-            model: Math.min(password.text.length, 21)
-
-            Image {
-              source: "bullet.png"
-              width: 7
-              height: 7
-            }
-          }
-        }
+      Rectangle {
+        width: parent.width
+        height: 54
+        radius: 10
+        color: "#99070b12"
+        border.color: password.activeFocus ? "#8bb8ff" : "#26ffffff"
+        border.width: 1
 
         TextInput {
           id: password
           anchors.fill: parent
-          anchors.leftMargin: 20
-          anchors.rightMargin: 20
+          anchors.leftMargin: 18
+          anchors.rightMargin: 18
           verticalAlignment: TextInput.AlignVCenter
           echoMode: TextInput.Password
-          font.family: "JetBrainsMono Nerd Font"
-          font.pixelSize: 24
-          font.letterSpacing: 5
           passwordCharacter: "\u2022"
-          color: "transparent"
-          selectionColor: "transparent"
-          selectedTextColor: "transparent"
-          cursorDelegate: Item {}
+          color: "#f6f7fb"
+          selectionColor: "#3b6aa5"
+          selectedTextColor: "#ffffff"
+          font.family: "JetBrainsMono Nerd Font"
+          font.pixelSize: 22
           focus: true
 
           onTextChanged: root.loginFailed = false
@@ -108,9 +146,51 @@ Rectangle {
             }
           }
         }
+
+        Text {
+          anchors.left: parent.left
+          anchors.leftMargin: 18
+          anchors.verticalCenter: parent.verticalCenter
+          visible: password.text.length === 0 && !password.activeFocus
+          text: "Password"
+          color: "#647086"
+          font.family: "Inter"
+          font.pixelSize: 16
+        }
+      }
+
+      Text {
+        width: parent.width
+        text: root.loginFailed ? "Password was not accepted" : "Press Enter to start Solace"
+        color: root.loginFailed ? "#ff9f9f" : "#8d98ad"
+        font.family: "Inter"
+        font.pixelSize: 14
       }
     }
+  }
 
+  Text {
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    anchors.leftMargin: 44
+    anchors.bottomMargin: 34
+    text: "Solace Hyprland"
+    color: "#f6f7fb"
+    opacity: 0.58
+    font.family: "JetBrainsMono Nerd Font"
+    font.pixelSize: 14
+  }
+
+  Connections {
+    target: sddm
+    function onLoginFailed() {
+      root.loginFailed = true
+      password.text = ""
+      password.forceActiveFocus()
+    }
+    function onLoginSucceeded() {
+      root.loginFailed = false
+    }
   }
 
   Component.onCompleted: password.forceActiveFocus()

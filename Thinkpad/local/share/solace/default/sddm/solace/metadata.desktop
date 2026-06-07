@@ -1,6 +1,6 @@
 [SddmGreeterTheme]
 Name=Solace
-Description=Minimal terminal-style login theme matching the Limine bootloader aesthetic
+Description=Solace branded Wayland login theme
 Author=Solace
 Type=sddm-theme
 Version=1.0

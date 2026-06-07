@@ -62,26 +62,28 @@ install_sddm_wayland_config() {
   local greeter_src="$LOGIN_CONFIG_ROOT/sddm/hyprland.conf"
   local greeter_dest="/usr/share/sddm/hyprland.conf"
   local autologin_dest="/etc/sddm.conf.d/autologin.conf"
+  local theme_dest="/etc/sddm.conf.d/theme.conf"
   local sddm_theme_src="$SNAPSHOT_DEFAULT_ROOT/sddm/solace"
   local sddm_theme_dest="/usr/share/sddm/themes/solace"
 
   [[ -f "$src" ]] || die "Missing SDDM config: $src"
   [[ -f "$greeter_src" ]] || die "Missing SDDM greeter config: $greeter_src"
-  [[ -n "$LOGIN_USER" && "$LOGIN_USER" != "root" ]] || die "Could not determine non-root user for SDDM autologin"
-
   install_login_file "$src" "$dest"
   install_login_file "$greeter_src" "$greeter_dest"
   install_system_tree "$sddm_theme_src" "$sddm_theme_dest"
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
-    log "DRY: would install SDDM autologin config for $LOGIN_USER -> $autologin_dest"
+    log "DRY: would remove SDDM autologin config at $autologin_dest"
+    log "DRY: would install SDDM theme config -> $theme_dest"
     return 0
   fi
 
-  backup_target "$autologin_dest"
   run_cmd sudo install -d -m 0755 /etc/sddm.conf.d
-  printf '[Autologin]\nUser=%s\nSession=solace\n\n[Theme]\nCurrent=solace\n' "$LOGIN_USER" |
-    run_cmd sudo tee "$autologin_dest" >/dev/null
+  if [[ -e "$autologin_dest" || -L "$autologin_dest" ]]; then
+    backup_target "$autologin_dest"
+    run_cmd sudo rm -f "$autologin_dest"
+  fi
+  printf '[Theme]\nCurrent=solace\n' | run_cmd sudo tee "$theme_dest" >/dev/null
 }
 
 enable_login_manager() {
