@@ -1,7 +1,7 @@
 @import "../solace/current/theme/waybar.css";
 
 * {
-  background-color: @background;
+  background-color: transparent;
   color: @foreground;
 
   border: none;
@@ -9,6 +9,11 @@
   min-height: 0;
   font-family: 'JetBrainsMono Nerd Font';
   font-size: 12px;
+}
+
+window#waybar {
+  background-color: alpha(@background, 0.82);
+  border-radius: 10px;
 }
 
 .modules-left {
