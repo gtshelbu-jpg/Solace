@@ -14,6 +14,9 @@ USER_SERVICES=(
   "solace-recover-internal-monitor.service"
   "swayosd-server.service"
 )
+USER_SERVICES_NOW=(
+  "hypridle.service"
+)
 
 for service_name in "${SYSTEM_SERVICES[@]}"; do
   if [[ "$DRY_RUN" -eq 1 ]]; then
@@ -34,6 +37,14 @@ for service_name in "${USER_SERVICES[@]}"; do
     log "DRY: systemctl --user enable $service_name"
   else
     systemctl --user enable "$service_name" || warn "Could not enable user service: $service_name"
+  fi
+done
+
+for service_name in "${USER_SERVICES_NOW[@]}"; do
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: systemctl --user enable --now $service_name"
+  else
+    systemctl --user enable --now "$service_name" || warn "Could not enable and start user service: $service_name"
   fi
 done
 

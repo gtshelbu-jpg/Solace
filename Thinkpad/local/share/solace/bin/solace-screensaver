@@ -1,16 +1,126 @@
 #!/bin/bash
 
-# solace:summary=Run the Solace screensaver using random effects from TTE.
+# solace:summary=Run the Solace screensaver using animated terminal effects.
 
-screensaver_in_focus() {
-  hyprctl activewindow -j | jq -e '.class == "org.solace.screensaver"' >/dev/null 2>&1
+screensaver_visible() {
+  hyprctl clients -j | jq -e 'any(.[]; .class == "org.solace.screensaver" or .initialClass == "org.solace.screensaver")' >/dev/null 2>&1
 }
 
 exit_screensaver() {
   hyprctl keyword cursor:invisible false &>/dev/null || true
+  printf '\033[?25h\033[0m\033[2J\033[H'
   pkill -x tte 2>/dev/null
   pkill -f org.solace.screensaver 2>/dev/null
   exit 0
+}
+
+run_tte_screensaver() {
+  local tty_name="$1"
+
+  while true; do
+    tte -i ~/.config/solace/branding/screensaver.txt \
+      --frame-rate 120 --canvas-width 0 --canvas-height 0 --reuse-canvas --anchor-canvas c --anchor-text c\
+      --random-effect --no-eol --no-restore-cursor &
+
+    while pgrep -t "${tty_name#/dev/}" -x tte >/dev/null; do
+      if read -rsn1 -t 1 || ! screensaver_visible; then
+        exit_screensaver
+      fi
+    done
+  done
+}
+
+run_builtin_screensaver() {
+  local branding_file="${1:-$HOME/.config/solace/branding/screensaver.txt}"
+  local frame=0
+  local palette=(31 37 43 73 109 116 109 73 43 37)
+  local stars_x=() stars_y=()
+  local lines_count max_width cols rows prev_cols=0 prev_rows=0 top left prev_top=0 prev_left=0
+  local wave line_index char_index line_length color text star_count star x y clear_width clear_row
+
+  mapfile -t text <"$branding_file"
+
+  lines_count=${#text[@]}
+  max_width=0
+  for line in "${text[@]}"; do
+    (( ${#line} > max_width )) && max_width=${#line}
+  done
+
+  printf '\033[?25l'
+
+  while true; do
+    if read -rsn1 -t 0.14 || ! screensaver_visible; then
+      exit_screensaver
+    fi
+
+    cols=$(tput cols 2>/dev/null || echo 80)
+    rows=$(tput lines 2>/dev/null || echo 24)
+    top=$(( (rows - lines_count) / 2 + ((frame / 48) % 3) - 1 ))
+    left=$(( (cols - max_width) / 2 ))
+    (( top < 1 )) && top=1
+    (( left < 1 )) && left=1
+
+    star_count=$(( cols * rows / 260 ))
+    (( star_count < 12 )) && star_count=12
+    (( star_count > 55 )) && star_count=55
+
+    if (( cols != prev_cols || rows != prev_rows )); then
+      stars_x=()
+      stars_y=()
+      while (( ${#stars_x[@]} < star_count )); do
+        stars_x+=( $((RANDOM % cols + 1)) )
+        stars_y+=( $((RANDOM % rows + 1)) )
+      done
+
+      printf '\033[2J\033[H\033[48;5;16m'
+      for ((star = 0; star < star_count; star++)); do
+        x=${stars_x[$star]}
+        y=${stars_y[$star]}
+        printf '\033[%d;%dH\033[38;5;236m.' "$y" "$x"
+      done
+
+      prev_cols=$cols
+      prev_rows=$rows
+      prev_top=0
+      prev_left=0
+    fi
+
+    if (( prev_top > 0 )); then
+      clear_width=$((max_width + 4))
+      for ((clear_row = prev_top - 1; clear_row <= prev_top + lines_count; clear_row++)); do
+        if (( clear_row >= 1 && clear_row <= rows )); then
+          printf '\033[%d;%dH%*s' "$clear_row" "$((prev_left > 2 ? prev_left - 2 : 1))" "$clear_width" ''
+        fi
+      done
+    fi
+
+    if (( frame % 24 == 0 )); then
+      star=$((RANDOM % star_count))
+      x=${stars_x[$star]}
+      y=${stars_y[$star]}
+      if (( x > 0 && y > 0 )); then
+        printf '\033[%d;%dH\033[38;5;244m.' "$y" "$x"
+      fi
+    fi
+
+    line_index=0
+    for line in "${text[@]}"; do
+      line_length=${#line}
+
+      printf '\033[%d;%dH' "$((top + line_index))" "$left"
+      for ((char_index = 0; char_index < line_length; char_index++)); do
+        wave=$(( (frame / 3 + char_index / 2 + line_index * 2) % ${#palette[@]} ))
+        color=${palette[$wave]}
+        printf '\033[38;5;%sm%s' "$color" "${line:char_index:1}"
+      done
+      ((line_index++))
+    done
+
+    printf '\033[0m'
+    prev_top=$top
+    prev_left=$left
+    ((frame++))
+  done
 }
 
 # Exit the screensaver on signals and input from keyboard and mouse
@@ -22,14 +132,8 @@ hyprctl keyword cursor:invisible true &>/dev/null
 
 tty=$(tty 2>/dev/null)
 
-while true; do
-  tte -i ~/.config/solace/branding/screensaver.txt \
-    --frame-rate 120 --canvas-width 0 --canvas-height 0 --reuse-canvas --anchor-canvas c --anchor-text c\
-    --random-effect --no-eol --no-restore-cursor &
-
-  while pgrep -t "${tty#/dev/}" -x tte >/dev/null; do
-    if read -n1 -t 1 || ! screensaver_in_focus; then
-      exit_screensaver
-    fi
-  done
-done
+if command -v tte >/dev/null 2>&1; then
+  run_tte_screensaver "$tty"
+else
+  run_builtin_screensaver ~/.config/solace/branding/screensaver.txt
+fi

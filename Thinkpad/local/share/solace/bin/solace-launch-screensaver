@@ -2,10 +2,6 @@
 
 # solace:summary=Launch the Solace screensaver in the default terminal on the system with the correct font configuration.
 
-if ! command -v tte &>/dev/null; then
-  exit 1
-fi
-
 # Exit early if screensave is already running
 pgrep -f org.solace.screensaver && exit 0
 
@@ -18,13 +14,13 @@ fi
 walker -q
 
 focused=$(solace-hyprland-monitor-focused)
-terminal=$(xdg-terminal-exec --print-id)
+terminal=$(xdg-terminal-exec --print-id | tr '[:upper:]' '[:lower:]')
 
 for m in $(hyprctl monitors -j | jq -r '.[] | .name'); do
   hyprctl dispatch focusmonitor $m
 
   case $terminal in
-  *Alacritty*)
+  *alacritty*)
     hyprctl dispatch exec -- \
       alacritty --class=org.solace.screensaver \
       --config-file ~/.local/share/solace/default/alacritty/screensaver.toml \
