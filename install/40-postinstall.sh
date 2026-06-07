@@ -12,4 +12,7 @@ log "Post-install checks complete."
 if command -v solace-refresh-applications >/dev/null 2>&1; then
   solace-refresh-applications || true
 fi
+if command -v solace-theme-set-gnome >/dev/null 2>&1; then
+  solace-theme-set-gnome || true
+fi
 log "Log out and back in so Hyprland and user-session services pick up the new config links."
