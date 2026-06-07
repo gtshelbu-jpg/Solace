@@ -7,7 +7,7 @@
 
 if ! pidof hyprlock >/dev/null; then
   (
-    hyprlock
+    hyprlock --quiet
     solace-system-wake
   ) &
 fi
