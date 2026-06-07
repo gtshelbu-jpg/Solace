@@ -23,9 +23,10 @@ scrollbar {
 }
 
 .box-wrapper {
-  background: alpha(@base, 0.95);
+  background: alpha(@base, 0.86);
   padding: 20px;
-  border: 2px solid @border;
+  border: none;
+  border-radius: 14px;
 }
 
 .preview-box {
@@ -35,8 +36,9 @@ scrollbar {
 }
 
 .search-container {
-  background: @base;
+  background: alpha(@background, 0.52);
   padding: 10px;
+  border-radius: 10px;
 }
 
 .input placeholder {
@@ -80,6 +82,7 @@ child:selected .item-box * {
 
 child:selected {
   background: alpha(@text, 0.07);
+  border-radius: 8px;
 }
 
 .item-box {
@@ -111,11 +114,11 @@ child:selected {
 }
 
 .keybind-hints {
-  background: @background;
+  background: alpha(@background, 0.52);
   padding: 10px;
   margin-top: 10px;
+  border-radius: 10px;
 }
 
 .preview {
 }
-
