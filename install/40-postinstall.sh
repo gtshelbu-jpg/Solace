@@ -9,4 +9,7 @@ if [[ ${1:-} == "--dry-run" ]]; then
 fi
 
 log "Post-install checks complete."
+if command -v solace-refresh-applications >/dev/null 2>&1; then
+  solace-refresh-applications || true
+fi
 log "Log out and back in so Hyprland and user-session services pick up the new config links."

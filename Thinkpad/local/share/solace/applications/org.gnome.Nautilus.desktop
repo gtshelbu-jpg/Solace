@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Nautilus Files
+Comment=Browse and organize files
+Exec=nautilus --new-window %U
+Icon=org.gnome.Nautilus
+Terminal=false
+Type=Application
+Categories=Utility;FileManager;FileTools;
+StartupNotify=true
+MimeType=inode/directory;

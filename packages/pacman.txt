@@ -91,5 +91,6 @@ wofi
 wtype
 zed
 zellij
+zen-browser
 zoxide
 nwg-displays

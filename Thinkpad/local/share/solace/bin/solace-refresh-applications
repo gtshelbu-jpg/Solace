@@ -15,10 +15,15 @@ if solace-cmd-present foot; then
   cp ~/.local/share/solace/default/foot/foot.desktop ~/.local/share/applications/
 fi
 
-# Refresh the webapps, TUIs, and npx wrappers
-bash $SOLACE_PATH/install/packaging/icons.sh
-bash $SOLACE_PATH/install/packaging/webapps.sh
-bash $SOLACE_PATH/install/packaging/tuis.sh
-bash $SOLACE_PATH/install/packaging/npx.sh
+# Reapply hidden overrides last so default terminal/app declarations cannot
+# accidentally make lower-level launchers visible again.
+cp ~/.local/share/solace/applications/hidden/*.desktop ~/.local/share/applications/
+
+# Refresh the webapps, TUIs, and npx wrappers when the packaging helpers are
+# present in the installed Solace tree.
+for helper in icons webapps tuis npx; do
+  helper_path="$SOLACE_PATH/install/packaging/${helper}.sh"
+  [[ -f "$helper_path" ]] && bash "$helper_path"
+done
 
 update-desktop-database ~/.local/share/applications
