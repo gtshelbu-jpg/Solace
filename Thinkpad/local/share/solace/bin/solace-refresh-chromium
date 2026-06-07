@@ -3,6 +3,7 @@
 # solace:summary=Refresh the ~/.config/chromium-flags.conf file from the Solace defaults.
 
 CONFIG_FILE="$HOME/.config/chromium-flags.conf"
+COPY_URL_EXTENSION="$HOME/.local/share/solace/default/chromium/extensions/copy-url"
 INSTALL_GOOGLE_ACCOUNTS=false
 
 # Check if google accounts were installed
@@ -14,6 +15,10 @@ fi
 
 # Refresh the Chromium configuration
 solace-refresh-config chromium-flags.conf
+
+if [[ -f "$COPY_URL_EXTENSION/manifest.json" ]]; then
+  printf '\n--load-extension=%s\n' "$COPY_URL_EXTENSION" >>"$CONFIG_FILE"
+fi
 
 # Re-install Google accounts if previously configured
 if [[ $INSTALL_GOOGLE_ACCOUNTS == "true" ]]; then
