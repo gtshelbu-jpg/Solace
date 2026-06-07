@@ -151,6 +151,5 @@ video/x-theora+ogg=mpv.desktop;
 x-scheme-handler/ableton=wine-protocol-ableton.desktop;
 x-scheme-handler/aether=aether-protocol-handler.desktop;
 x-scheme-handler/jetbrains=jetbrains-toolbox.desktop;
-x-scheme-handler/mailto=HEY.desktop;
 x-scheme-handler/zoommtg=Zoom.desktop;
 x-scheme-handler/zoomus=Zoom.desktop;
