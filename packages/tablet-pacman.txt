@@ -1,0 +1,2 @@
+# Optional drawing tablet support packages from official Arch repositories.
+libwacom

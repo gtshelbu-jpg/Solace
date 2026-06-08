@@ -50,11 +50,14 @@ Solace/
 
 This repo is a post-install bootstrap for an already-installed Arch Linux system.
 
-1. `install/10-packages.sh` installs official repo packages from `packages/pacman.txt`, bootstraps `yay` if needed, and installs AUR packages from `packages/aur.txt`.
-2. `install/20-configs.sh` backs up existing config and links or copies reviewed reusable config into the current user account.
-3. `install/30-services.sh` enables only safe, generic services.
-4. `install/35-login.sh` provisions SDDM autologin, the Solace Wayland session, and login keyring behavior using the Omarchy-derived flow.
-5. `install/40-postinstall.sh` performs light finishing steps and prints follow-up guidance.
+1. `install/install.sh` asks whether optional drawing tablet support should be installed.
+2. `install/10-packages.sh` installs official repo packages from `packages/pacman.txt`, bootstraps `yay` if needed, installs AUR packages from `packages/aur.txt`, and includes optional tablet package lists when selected.
+3. `install/20-configs.sh` backs up existing config and links or copies reviewed reusable config into the current user account.
+4. `install/30-services.sh` enables only safe, generic services.
+5. `install/31-displaylink.sh` enables DisplayLink support when `evdi-dkms` and `displaylink` are installed.
+6. `install/35-login.sh` provisions SDDM, the Solace Wayland session, and login keyring behavior using the Omarchy-derived flow.
+7. `install/36-boot-visuals.sh` installs the Solace Plymouth theme and applies Limine theming when Limine is present.
+8. `install/40-postinstall.sh` performs light finishing steps and prints follow-up guidance.
 
 ### Usage
 
@@ -70,6 +73,12 @@ Run everything:
 ./install.sh
 ```
 
+Run with optional drawing tablet support preselected:
+
+```bash
+./install.sh --tablet
+```
+
 Run just packages or configs:
 
 ```bash
@@ -82,6 +91,6 @@ Backups of overwritten files are stored under `~/.config-backups/solace-TIMESTAM
 
 Notes:
 - The installer now uses a root wrapper `./install.sh` which ensures the inner `install/` scripts are executable before running.
-- The login step does not configure Plymouth, kernel command lines, initramfs images, or bootloader files.
+- Boot visuals are configured only after the base Arch install is already bootable; the installer does not partition disks or install a bootloader from scratch.
 - The `Thinkpad/` snapshot is the source-of-truth capture for the desired desktop experience, but hardware-specific, pacman/mirror, bootloader, and machine recovery pieces must be filtered before they are installed automatically.
 - This project borrows ideas from other popular Hyprland environments; it is not tied to any single distribution overlay.

@@ -6,6 +6,8 @@ source "$SCRIPT_DIR/lib.sh"
 
 PKG_FILE="$SCRIPT_DIR/../packages/pacman.txt"
 AUR_FILE="$SCRIPT_DIR/../packages/aur.txt"
+TABLET_PKG_FILE="$SCRIPT_DIR/../packages/tablet-pacman.txt"
+TABLET_AUR_FILE="$SCRIPT_DIR/../packages/tablet-aur.txt"
 
 if [[ ${1:-} == "--dry-run" ]]; then
   DRY_RUN=1
@@ -18,6 +20,16 @@ fi
 
 mapfile -t official_packages < <(read_list_file "$PKG_FILE")
 mapfile -t aur_packages < <(read_list_file "$AUR_FILE")
+
+if [[ "${SOLACE_INSTALL_TABLET_SUPPORT:-0}" == "1" ]]; then
+  log "Tablet support selected"
+  mapfile -t tablet_official_packages < <(read_list_file "$TABLET_PKG_FILE")
+  mapfile -t tablet_aur_packages < <(read_list_file "$TABLET_AUR_FILE")
+  official_packages+=("${tablet_official_packages[@]}")
+  aur_packages+=("${tablet_aur_packages[@]}")
+else
+  log "Tablet support not selected"
+fi
 
 if [[ ${#official_packages[@]} -gt 0 ]]; then
   log "Installing official packages from $PKG_FILE"

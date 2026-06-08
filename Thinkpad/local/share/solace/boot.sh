@@ -20,22 +20,10 @@ echo -e "\n$ansi_art\n"
 # Use custom branch if instructed, otherwise default to master
 SOLACE_REF="${SOLACE_REF:-master}"
 
-# Set mirror based on branch
-if [[ $SOLACE_REF == "dev" ]]; then
-  export SOLACE_MIRROR=edge
-  echo 'Server = https://mirror.solace.org/$repo/os/$arch' | sudo tee /etc/pacman.d/mirrorlist >/dev/null
-elif [[ $SOLACE_REF == "rc" ]]; then
-  export SOLACE_MIRROR=rc
-  echo 'Server = https://rc-mirror.solace.org/$repo/os/$arch' | sudo tee /etc/pacman.d/mirrorlist >/dev/null
-else
-  export SOLACE_MIRROR=stable
-  echo 'Server = https://stable-mirror.solace.org/$repo/os/$arch' | sudo tee /etc/pacman.d/mirrorlist >/dev/null
-fi
-
 sudo pacman -Syu --noconfirm --needed git
 
-# Use custom repo if specified, otherwise default to basecamp/solace
-SOLACE_REPO="${SOLACE_REPO:-basecamp/solace}"
+# Use custom repo if specified, otherwise default to this Solace repo.
+SOLACE_REPO="${SOLACE_REPO:-gtshelbu-jpg/Solace}"
 
 echo -e "\nCloning Solace from: https://github.com/${SOLACE_REPO}.git"
 rm -rf ~/.local/share/solace/
