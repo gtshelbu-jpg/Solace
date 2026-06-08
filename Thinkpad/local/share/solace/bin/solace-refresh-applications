@@ -11,6 +11,31 @@ mkdir -p ~/.local/share/applications
 cp ~/.local/share/solace/applications/*.desktop ~/.local/share/applications/
 cp ~/.local/share/solace/applications/hidden/*.desktop ~/.local/share/applications/
 
+write_hidden_override() {
+  local desktop_id="$1"
+  local target="$HOME/.local/share/applications/$desktop_id"
+  local source_name
+  local name
+
+  source_name="$(sed -n 's/^Name=//p' /usr/local/share/applications/"$desktop_id" /usr/share/applications/"$desktop_id" 2>/dev/null | head -n1)"
+  name="${source_name:-${desktop_id%.desktop}}"
+
+  cat >"$target" <<EOF
+[Desktop Entry]
+Type=Application
+Name=$name
+Exec=false
+Terminal=false
+NoDisplay=true
+Hidden=true
+EOF
+}
+
+for hidden_desktop in ~/.local/share/solace/applications/hidden/*.desktop; do
+  [[ -f "$hidden_desktop" ]] || continue
+  write_hidden_override "$(basename "$hidden_desktop")"
+done
+
 if solace-cmd-present foot; then
   cp ~/.local/share/solace/default/foot/foot.desktop ~/.local/share/applications/
 fi
@@ -18,6 +43,10 @@ fi
 # Reapply hidden overrides last so default terminal/app declarations cannot
 # accidentally make lower-level launchers visible again.
 cp ~/.local/share/solace/applications/hidden/*.desktop ~/.local/share/applications/
+for hidden_desktop in ~/.local/share/solace/applications/hidden/*.desktop; do
+  [[ -f "$hidden_desktop" ]] || continue
+  write_hidden_override "$(basename "$hidden_desktop")"
+done
 
 # Refresh the webapps, TUIs, and npx wrappers when the packaging helpers are
 # present in the installed Solace tree.
