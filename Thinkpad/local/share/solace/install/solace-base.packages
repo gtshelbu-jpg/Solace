@@ -106,6 +106,8 @@ power-profiles-daemon
 python-gobject
 python-poetry-core
 python-terminaltexteffects
+qt5-base
+qt5-declarative
 qt5-wayland
 ripgrep
 ruby
@@ -137,6 +139,7 @@ unzip
 usage
 uwsm
 waybar
+weston
 whois
 wireless-regdb
 wiremix
@@ -146,7 +149,6 @@ woff2-font-awesome
 xdg-desktop-portal-gtk
 xdg-desktop-portal-hyprland
 xmlstarlet
-xorg-server
 xorg-xwayland
 xournalpp
 yaru-icon-theme

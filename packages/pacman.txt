@@ -52,9 +52,13 @@ uwsm
 sddm
 polkit-gnome
 power-profiles-daemon
+qt5-base
+qt5-declarative
+qt5-wayland
 qt6-wayland
 qalculate-gtk
 waybar
+weston
 alacritty
 foot
 mako
@@ -64,7 +68,6 @@ wireplumber
 xdg-desktop-portal
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
-xorg-server
 xorg-xwayland
 wl-clipboard
 grim
