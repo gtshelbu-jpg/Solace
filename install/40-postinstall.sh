@@ -10,7 +10,7 @@ fi
 
 log "Post-install checks complete."
 if [[ "$DRY_RUN" -eq 1 ]]; then
-  log "DRY: would refresh application entries, GNOME/GTK theme settings, and Chromium flags"
+  log "DRY: would refresh application entries, GNOME/GTK theme settings, VS Code theme settings, and Chromium flags"
   log "DRY: log out and back in so Hyprland and user-session services pick up the new config links"
   exit 0
 fi
@@ -20,6 +20,9 @@ if command -v solace-refresh-applications >/dev/null 2>&1; then
 fi
 if command -v solace-theme-set-gnome >/dev/null 2>&1; then
   solace-theme-set-gnome || true
+fi
+if command -v solace-theme-set-vscode >/dev/null 2>&1; then
+  solace-theme-set-vscode || true
 fi
 if command -v solace-refresh-chromium >/dev/null 2>&1; then
   solace-refresh-chromium || true

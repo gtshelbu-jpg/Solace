@@ -7,7 +7,20 @@ Rectangle {
   height: 1080
   color: "#07090f"
 
-  property string currentUser: userModel.lastUser
+  function defaultUserName() {
+    var last = (userModel.lastUser || "").toString()
+    if (last.length > 0)
+      return last
+
+    if (userModel.rowCount && userModel.rowCount() > 0) {
+      var first = userModel.data(userModel.index(0, 0), Qt.DisplayRole)
+      return (first || "").toString()
+    }
+
+    return ""
+  }
+
+  property string currentUser: defaultUserName()
   property bool loginFailed: false
   property int sessionIndex: {
     for (var i = 0; i < sessionModel.rowCount(); i++) {
@@ -107,11 +120,20 @@ Rectangle {
         font.weight: Font.DemiBold
       }
 
-      Text {
+      TextInput {
+        id: username
         text: root.currentUser
         color: "#aeb7c8"
         font.family: "JetBrainsMono Nerd Font"
         font.pixelSize: 15
+        selectByMouse: true
+
+        Keys.onPressed: {
+          if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            password.forceActiveFocus()
+            event.accepted = true
+          }
+        }
       }
 
       Rectangle {
@@ -141,7 +163,7 @@ Rectangle {
 
           Keys.onPressed: {
             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-              sddm.login(root.currentUser, password.text, root.sessionIndex)
+              sddm.login(username.text, password.text, root.sessionIndex)
               event.accepted = true
             }
           }
@@ -193,5 +215,10 @@ Rectangle {
     }
   }
 
-  Component.onCompleted: password.forceActiveFocus()
+  Component.onCompleted: {
+    if (username.text.length > 0)
+      password.forceActiveFocus()
+    else
+      username.forceActiveFocus()
+  }
 }

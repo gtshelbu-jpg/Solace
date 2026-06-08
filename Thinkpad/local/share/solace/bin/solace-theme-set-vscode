@@ -4,10 +4,57 @@
 # solace:hidden=true
 
 VS_CODE_THEME="$HOME/.config/solace/current/theme/vscode.json"
+VS_CODE_LOCAL_EXTENSION="$HOME/.config/solace/current/theme/vscode-extension"
+
+install_local_extension() {
+  local extension="$1"
+  local extensions_dir="$2"
+
+  [[ -d "$VS_CODE_LOCAL_EXTENSION" ]] || return 1
+  [[ -f "$VS_CODE_LOCAL_EXTENSION/package.json" ]] || return 1
+
+  local publisher name version local_id dest
+  publisher=$(jq -r '.publisher // empty' "$VS_CODE_LOCAL_EXTENSION/package.json")
+  name=$(jq -r '.name // empty' "$VS_CODE_LOCAL_EXTENSION/package.json")
+  version=$(jq -r '.version // "1.0.0"' "$VS_CODE_LOCAL_EXTENSION/package.json")
+  local_id="$publisher.$name"
+
+  [[ -n "$publisher" && -n "$name" && "$local_id" == "$extension" ]] || return 1
+
+  dest="$extensions_dir/$extension-$version"
+  mkdir -p "$extensions_dir"
+  rm -rf -- "$dest"
+  cp -a -- "$VS_CODE_LOCAL_EXTENSION" "$dest"
+}
+
+set_color_theme() {
+  local settings_path="$1"
+  local theme_name="$2"
+
+  mkdir -p "$(dirname "$settings_path")"
+  [[ -f $settings_path ]] || printf '{\n}\n' >"$settings_path"
+
+  if command -v jq >/dev/null 2>&1; then
+    local tmp
+    tmp="$(mktemp)"
+    jq --arg theme "$theme_name" '. + {"workbench.colorTheme": $theme}' "$settings_path" > "$tmp" \
+      && mv "$tmp" "$settings_path"
+    rm -f "$tmp"
+  else
+    if ! grep -q '"workbench.colorTheme"' "$settings_path"; then
+      sed -i --follow-symlinks -E '0,/\{/{s/\{/{\ "workbench.colorTheme": "",/}' "$settings_path"
+    fi
+
+    sed -i --follow-symlinks -E \
+      "s/(\"workbench.colorTheme\"[[:space:]]*:[[:space:]]*\")[^\"]*(\")/\1$theme_name\2/" \
+      "$settings_path"
+  fi
+}
 
 set_theme() {
   local editor_cmd="$1"
   local settings_path="$2"
+  local extensions_dir="$3"
 
   solace-cmd-present "$editor_cmd" || return 0
 
@@ -16,25 +63,17 @@ set_theme() {
     extension=$(jq -r '.extension' "$VS_CODE_THEME")
 
     if [[ -n $extension ]] && ! "$editor_cmd" --list-extensions 2>/dev/null | grep -Fxq "$extension"; then
-      "$editor_cmd" --install-extension "$extension" >/dev/null 2>&1
+      install_local_extension "$extension" "$extensions_dir" \
+        || "$editor_cmd" --install-extension "$extension" >/dev/null 2>&1
     fi
 
-    mkdir -p "$(dirname "$settings_path")"
-    [[ -f $settings_path ]] || printf '{\n}\n' >"$settings_path"
-
-    if ! grep -q '"workbench.colorTheme"' "$settings_path"; then
-      sed -i --follow-symlinks -E '0,/\{/{s/\{/{\ "workbench.colorTheme": "",/}' "$settings_path"
-    fi
-
-    sed -i --follow-symlinks -E \
-      "s/(\"workbench.colorTheme\"[[:space:]]*:[[:space:]]*\")[^\"]*(\")/\1$theme_name\2/" \
-      "$settings_path"
+    set_color_theme "$settings_path" "$theme_name"
   elif [[ -f $settings_path ]]; then
     sed -i --follow-symlinks -E 's/\"workbench\.colorTheme\"[[:space:]]*:[^,}]*,?//' "$settings_path"
   fi
 }
 
-! solace-toggle-enabled skip-vscode-theme-changes && set_theme "code" "$HOME/.config/Code/User/settings.json"
-! solace-toggle-enabled skip-vscode-insiders-theme-changes && set_theme "code-insiders" "$HOME/.config/Code - Insiders/User/settings.json"
-! solace-toggle-enabled skip-codium-theme-changes && set_theme "codium" "$HOME/.config/VSCodium/User/settings.json"
-! solace-toggle-enabled skip-cursor-theme-changes && set_theme "cursor" "$HOME/.config/Cursor/User/settings.json"
+! solace-toggle-enabled skip-vscode-theme-changes && set_theme "code" "$HOME/.config/Code/User/settings.json" "$HOME/.vscode/extensions"
+! solace-toggle-enabled skip-vscode-insiders-theme-changes && set_theme "code-insiders" "$HOME/.config/Code - Insiders/User/settings.json" "$HOME/.vscode-insiders/extensions"
+! solace-toggle-enabled skip-codium-theme-changes && set_theme "codium" "$HOME/.config/VSCodium/User/settings.json" "$HOME/.vscode-oss/extensions"
+! solace-toggle-enabled skip-cursor-theme-changes && set_theme "cursor" "$HOME/.config/Cursor/User/settings.json" "$HOME/.cursor/extensions"

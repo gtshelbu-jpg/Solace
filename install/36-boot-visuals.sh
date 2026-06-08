@@ -58,15 +58,15 @@ install_limine_theme() {
 
   log "Installing Solace Limine theme"
   if [[ "$DRY_RUN" -eq 1 ]]; then
-    log "DRY: would back up and merge Solace theme settings into $limine_config"
+    log "DRY: would prepare Solace Limine assets for $limine_config"
     log "DRY: would install Solace UKI splash bitmap"
     log "DRY: would patch mkinitcpio presets with --splash"
     log "DRY: would rebuild initramfs/UKIs"
+    log "DRY: would merge Solace theme settings into $limine_config after Limine regeneration"
     return 0
   fi
 
   backup_target "$limine_config"
-  merge_limine_theme "$limine_config"
   run_cmd sudo install -Dm644 "$LIMINE_SRC/splash-solace.bmp" /usr/share/systemd/bootctl/splash-solace.bmp
 
   local preset
@@ -130,5 +130,9 @@ rebuild_boot_images() {
 install_plymouth_theme
 install_limine_theme
 rebuild_boot_images
+if [[ "$DRY_RUN" -eq 0 ]]; then
+  limine_config="$(find_limine_config || true)"
+  [[ -n "$limine_config" ]] && merge_limine_theme "$limine_config"
+fi
 
 log "Boot visuals configured where supported."
