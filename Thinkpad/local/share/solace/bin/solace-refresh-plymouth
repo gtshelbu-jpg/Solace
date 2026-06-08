@@ -5,6 +5,10 @@
 
 sudo cp -r ~/.local/share/solace/default/plymouth/* /usr/share/plymouth/themes/solace/
 sudo plymouth-set-default-theme solace
+sudo install -d -m 0755 /etc/mkinitcpio.conf.d
+sudo tee /etc/mkinitcpio.conf.d/solace_hooks.conf <<'EOF' >/dev/null
+HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)
+EOF
 
 if command -v limine-mkinitcpio &>/dev/null; then
   sudo limine-mkinitcpio
