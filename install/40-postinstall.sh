@@ -15,19 +15,20 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   exit 0
 fi
 
-if command -v solace-refresh-applications >/dev/null 2>&1; then
-  solace-refresh-applications || true
-fi
-if command -v solace-refresh-walker >/dev/null 2>&1; then
-  solace-refresh-walker || true
-fi
-if command -v solace-theme-set-gnome >/dev/null 2>&1; then
-  solace-theme-set-gnome || true
-fi
-if command -v solace-theme-set-vscode >/dev/null 2>&1; then
-  solace-theme-set-vscode || true
-fi
-if command -v solace-refresh-chromium >/dev/null 2>&1; then
-  solace-refresh-chromium || true
-fi
+run_installed_helper() {
+  local helper="$1"
+  local installed="$HOME/.local/share/solace/bin/$helper"
+
+  if command -v "$helper" >/dev/null 2>&1; then
+    "$helper" || true
+  elif [[ -x "$installed" ]]; then
+    "$installed" || true
+  fi
+}
+
+run_installed_helper solace-refresh-applications
+run_installed_helper solace-refresh-walker
+run_installed_helper solace-theme-set-gnome
+run_installed_helper solace-theme-set-vscode
+run_installed_helper solace-refresh-chromium
 log "Log out and back in so Hyprland and user-session services pick up the new config links."

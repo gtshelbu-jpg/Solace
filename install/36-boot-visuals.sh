@@ -11,6 +11,7 @@ fi
 REPO_ROOT="$SCRIPT_DIR/.."
 PLYMOUTH_SRC="$REPO_ROOT/Thinkpad/local/share/solace/default/plymouth"
 LIMINE_SRC="$REPO_ROOT/Thinkpad/local/share/solace/default/limine"
+LIMINE_SPLASH_ARGS="quiet splash loglevel=0 systemd.show_status=false rd.udev.log_level=0 vt.global_cursor_default=0"
 
 install_plymouth_theme() {
   [[ -d "$PLYMOUTH_SRC" ]] || { warn "Missing Plymouth theme source: $PLYMOUTH_SRC"; return 0; }
@@ -20,6 +21,7 @@ install_plymouth_theme() {
     log "DRY: would install $PLYMOUTH_SRC -> /usr/share/plymouth/themes/solace"
     log "DRY: would set Plymouth theme to solace"
     log "DRY: would install /etc/mkinitcpio.conf.d/solace_hooks.conf"
+    log "DRY: would ensure /etc/mkinitcpio.conf includes the plymouth hook"
     return 0
   fi
 
@@ -31,6 +33,71 @@ install_plymouth_theme() {
   cat <<'EOF' | run_cmd sudo tee /etc/mkinitcpio.conf.d/solace_hooks.conf >/dev/null
 HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)
 EOF
+  ensure_mkinitcpio_plymouth_hook
+}
+
+ensure_mkinitcpio_plymouth_hook() {
+  local mkinitcpio_conf="/etc/mkinitcpio.conf"
+  local tmp
+
+  [[ -f "$mkinitcpio_conf" ]] || { warn "Missing $mkinitcpio_conf; cannot enable Plymouth hook"; return 0; }
+  if awk '
+    /^[[:space:]]*HOOKS=\([^)]*\)/ {
+      hooks = $0
+      sub(/^[^(]*\(/, "", hooks)
+      sub(/\).*/, "", hooks)
+      if (hooks ~ /(^|[[:space:]])plymouth([[:space:]]|$)/) found = 1
+    }
+    END { exit found ? 0 : 1 }
+  ' "$mkinitcpio_conf"; then
+    return 0
+  fi
+
+  log "Adding plymouth hook to $mkinitcpio_conf"
+  backup_target "$mkinitcpio_conf"
+  tmp="$(mktemp)"
+
+  awk '
+    /^[[:space:]]*HOOKS=\([^)]*\)/ {
+      line = $0
+      prefix = line
+      sub(/\(.*/, "(", prefix)
+      hooks = line
+      sub(/^[^(]*\(/, "", hooks)
+      suffix = hooks
+      sub(/^[^)]*\)/, ")", suffix)
+      sub(/\).*/, "", hooks)
+
+      if (hooks ~ /(^|[[:space:]])plymouth([[:space:]]|$)/) {
+        print line
+        next
+      }
+
+      count = split(hooks, hook, /[[:space:]]+/)
+      printf "%s", prefix
+      inserted = 0
+      printed = 0
+      for (i = 1; i <= count; i++) {
+        if (hook[i] == "") continue
+        if (printed++) printf " "
+        printf "%s", hook[i]
+        if (!inserted && (hook[i] == "udev" || hook[i] == "systemd")) {
+          printf " plymouth"
+          inserted = 1
+        }
+      }
+      if (!inserted) {
+        if (printed) printf " "
+        printf "plymouth"
+      }
+      print suffix
+      next
+    }
+    { print }
+  ' "$mkinitcpio_conf" >"$tmp"
+
+  run_cmd sudo install -m 0644 "$tmp" "$mkinitcpio_conf"
+  rm -f "$tmp"
 }
 
 find_limine_configs() {
@@ -67,6 +134,7 @@ install_limine_theme() {
     log "DRY: would prepare Solace Limine assets for ${#limine_configs[@]} config file(s)"
     log "DRY: would install Solace UKI splash bitmap"
     log "DRY: would patch mkinitcpio presets with --splash"
+    log "DRY: would ensure Limine entries include splash kernel args"
     log "DRY: would rebuild initramfs/UKIs"
     log "DRY: would merge Solace theme settings after Limine regeneration"
     for limine_config in "${limine_configs[@]}"; do
@@ -81,6 +149,7 @@ install_limine_theme() {
   done
 
   run_cmd sudo install -Dm644 "$LIMINE_SRC/splash-solace.bmp" /usr/share/systemd/bootctl/splash-solace.bmp
+  ensure_limine_default_config "${limine_configs[@]}"
 
   local preset
   for preset in /etc/mkinitcpio.d/*.preset; do
@@ -91,6 +160,117 @@ install_limine_theme() {
       run_cmd sudo sed -i '/^default_uki=/a default_options="--splash /usr/share/systemd/bootctl/splash-solace.bmp"' "$preset"
     fi
   done
+
+  for limine_config in "${limine_configs[@]}"; do
+    ensure_limine_splash_cmdline "$limine_config"
+  done
+}
+
+extract_limine_base_cmdline() {
+  local limine_config
+  local cmdline=""
+
+  for limine_config in "$@"; do
+    [[ -f "$limine_config" ]] || continue
+    cmdline="$(sed -n 's/^[[:space:]]*cmdline:[[:space:]]*//p' "$limine_config" | head -n1)"
+    [[ -n "$cmdline" ]] && break
+  done
+
+  if [[ -z "$cmdline" && -r /proc/cmdline ]]; then
+    cmdline="$(cat /proc/cmdline)"
+  fi
+
+  for arg in $LIMINE_SPLASH_ARGS; do
+    cmdline="$(printf '%s\n' "$cmdline" | sed -E "s/(^|[[:space:]])${arg//./\\.}([[:space:]]|$)/ /g")"
+  done
+  printf '%s\n' "$cmdline" | tr -s '[:space:]' ' ' | sed -E 's/^ //; s/ $//'
+}
+
+ensure_limine_default_config() {
+  local default_limine="/etc/default/limine"
+  local dropin="/etc/limine-entry-tool.d/solace-boot-visuals.conf"
+  local tmp
+  local base_cmdline
+  local escaped_cmdline
+
+  base_cmdline="$(extract_limine_base_cmdline "$@")"
+  escaped_cmdline="${base_cmdline//\\/\\\\}"
+  escaped_cmdline="${escaped_cmdline//&/\\&}"
+  escaped_cmdline="${escaped_cmdline//|/\\|}"
+  escaped_cmdline="${escaped_cmdline//\"/\\\"}"
+
+  log "Ensuring Limine generator defaults include Solace boot visuals"
+  run_cmd sudo install -d -m 0755 /etc/limine-entry-tool.d
+  printf 'KERNEL_CMDLINE[default]+=" %s"\n' "$LIMINE_SPLASH_ARGS" | run_cmd sudo tee "$dropin" >/dev/null
+
+  tmp="$(mktemp)"
+  if [[ -f "$default_limine" ]]; then
+    backup_target "$default_limine"
+    awk '
+      /^# Solace boot visuals$/ { skip = 1; next }
+      skip && /^# End Solace boot visuals$/ { skip = 0; next }
+      !skip { print }
+    ' "$default_limine" >"$tmp"
+    {
+      printf '\n# Solace boot visuals\n'
+      printf 'KERNEL_CMDLINE[default]+=" %s"\n' "$LIMINE_SPLASH_ARGS"
+      if ! grep -q '^ENABLE_UKI=' "$default_limine"; then
+        printf 'ENABLE_UKI=yes\n'
+      fi
+      if ! grep -q '^CUSTOM_UKI_NAME=' "$default_limine"; then
+        printf 'CUSTOM_UKI_NAME="solace"\n'
+      fi
+      if ! grep -q '^ENABLE_LIMINE_FALLBACK=' "$default_limine"; then
+        printf 'ENABLE_LIMINE_FALLBACK=yes\n'
+      fi
+      printf '# End Solace boot visuals\n'
+    } >>"$tmp"
+  elif [[ -f "$LIMINE_SRC/default.conf" ]]; then
+    sed "s|@@CMDLINE@@|$escaped_cmdline|g" "$LIMINE_SRC/default.conf" >"$tmp"
+  else
+    {
+      printf 'TARGET_OS_NAME="Solace"\n'
+      printf 'ESP_PATH="/boot"\n'
+      printf 'KERNEL_CMDLINE[default]+="%s"\n' "$escaped_cmdline"
+      printf 'KERNEL_CMDLINE[default]+=" %s"\n' "$LIMINE_SPLASH_ARGS"
+      printf 'ENABLE_UKI=yes\n'
+      printf 'CUSTOM_UKI_NAME="solace"\n'
+      printf 'ENABLE_LIMINE_FALLBACK=yes\n'
+    } >"$tmp"
+  fi
+
+  run_cmd sudo install -m 0644 "$tmp" "$default_limine"
+  rm -f "$tmp"
+}
+
+ensure_limine_splash_cmdline() {
+  local limine_config="$1"
+  local tmp
+
+  [[ -f "$limine_config" ]] || return 0
+  if ! grep -Eq '^[[:space:]]*cmdline:' "$limine_config"; then
+    return 0
+  fi
+
+  log "Ensuring splash kernel args in $limine_config"
+  tmp="$(mktemp)"
+  awk '
+    /^[[:space:]]*cmdline:/ {
+      line = $0
+      if (line !~ /(^|[[:space:]])quiet([[:space:]]|$)/) line = line " quiet"
+      if (line !~ /(^|[[:space:]])splash([[:space:]]|$)/) line = line " splash"
+      if (line !~ /(^|[[:space:]])loglevel=/) line = line " loglevel=0"
+      if (line !~ /(^|[[:space:]])systemd\.show_status=/) line = line " systemd.show_status=false"
+      if (line !~ /(^|[[:space:]])rd\.udev\.log_level=/) line = line " rd.udev.log_level=0"
+      if (line !~ /(^|[[:space:]])vt\.global_cursor_default=/) line = line " vt.global_cursor_default=0"
+      print line
+      next
+    }
+    { print }
+  ' "$limine_config" >"$tmp"
+
+  run_cmd sudo install -m 0644 "$tmp" "$limine_config"
+  rm -f "$tmp"
 }
 
 merge_limine_theme() {
@@ -98,23 +278,25 @@ merge_limine_theme() {
   local tmp
   tmp="$(mktemp)"
 
-  awk '
-    BEGIN {
-      split("interface_branding interface_branding_color interface_help_color interface_help_color_bright hash_mismatch_panic term_background backdrop term_palette term_palette_bright term_foreground term_foreground_bright term_background_bright", keys, " ")
-      for (i in keys) theme_keys[keys[i]] = 1
-    }
-    /^[[:space:]]*[A-Za-z0-9_]+[[:space:]]*:/ {
-      key = $0
-      sub(/^[[:space:]]*/, "", key)
-      sub(/[[:space:]]*:.*/, "", key)
-      if (theme_keys[key]) next
-    }
-    { print }
-  ' "$limine_config" > "$tmp"
-
   {
-    printf '\n'
     cat "$LIMINE_SRC/limine.conf"
+    printf '\n'
+    awk '
+      BEGIN {
+        split("interface_branding interface_branding_color interface_help_color interface_help_color_bright hash_mismatch_panic term_background backdrop term_palette term_palette_bright term_foreground term_foreground_bright term_background_bright", keys, " ")
+        for (i in keys) theme_keys[keys[i]] = 1
+      }
+      /^[[:space:]]*### Read more at config document:/ { next }
+      /^[[:space:]]*# Terminal colors/ { next }
+      /^[[:space:]]*# Text colors/ { next }
+      /^[[:space:]]*[A-Za-z0-9_]+[[:space:]]*:/ {
+        key = $0
+        sub(/^[[:space:]]*/, "", key)
+        sub(/[[:space:]]*:.*/, "", key)
+        if (theme_keys[key]) next
+      }
+      { print }
+    ' "$limine_config"
   } >> "$tmp"
 
   run_cmd sudo install -m 0644 "$tmp" "$limine_config"
@@ -147,6 +329,7 @@ if [[ "$DRY_RUN" -eq 0 ]]; then
   mapfile -t limine_configs < <(find_limine_configs | awk '!seen[$0]++')
   for limine_config in "${limine_configs[@]}"; do
     merge_limine_theme "$limine_config"
+    ensure_limine_splash_cmdline "$limine_config"
   done
 fi
 

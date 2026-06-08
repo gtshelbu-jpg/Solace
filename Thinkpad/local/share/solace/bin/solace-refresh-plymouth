@@ -1,7 +1,64 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
 # solace:summary=Overwrite the user config for the Plymouth drive decryption and boot sequence with the Solace default and rebuild it.
 # solace:requires-sudo=true
+
+ensure_mkinitcpio_plymouth_hook() {
+  local mkinitcpio_conf="/etc/mkinitcpio.conf"
+  local tmp
+
+  [[ -f "$mkinitcpio_conf" ]] || return 0
+  if awk '
+    /^[[:space:]]*HOOKS=\([^)]*\)/ {
+      hooks = $0
+      sub(/^[^(]*\(/, "", hooks)
+      sub(/\).*/, "", hooks)
+      if (hooks ~ /(^|[[:space:]])plymouth([[:space:]]|$)/) found = 1
+    }
+    END { exit found ? 0 : 1 }
+  ' "$mkinitcpio_conf"; then
+    return 0
+  fi
+
+  sudo cp "$mkinitcpio_conf" "$mkinitcpio_conf.bak"
+  tmp="$(mktemp)"
+  awk '
+    /^[[:space:]]*HOOKS=\([^)]*\)/ {
+      line = $0
+      prefix = line
+      sub(/\(.*/, "(", prefix)
+      hooks = line
+      sub(/^[^(]*\(/, "", hooks)
+      suffix = hooks
+      sub(/^[^)]*\)/, ")", suffix)
+      sub(/\).*/, "", hooks)
+
+      count = split(hooks, hook, /[[:space:]]+/)
+      printf "%s", prefix
+      inserted = 0
+      printed = 0
+      for (i = 1; i <= count; i++) {
+        if (hook[i] == "") continue
+        if (printed++) printf " "
+        printf "%s", hook[i]
+        if (!inserted && (hook[i] == "udev" || hook[i] == "systemd")) {
+          printf " plymouth"
+          inserted = 1
+        }
+      }
+      if (!inserted) {
+        if (printed) printf " "
+        printf "plymouth"
+      }
+      print suffix
+      next
+    }
+    { print }
+  ' "$mkinitcpio_conf" >"$tmp"
+  sudo install -m 0644 "$tmp" "$mkinitcpio_conf"
+  rm -f "$tmp"
+}
 
 sudo cp -r ~/.local/share/solace/default/plymouth/* /usr/share/plymouth/themes/solace/
 sudo plymouth-set-default-theme solace
@@ -9,6 +66,7 @@ sudo install -d -m 0755 /etc/mkinitcpio.conf.d
 sudo tee /etc/mkinitcpio.conf.d/solace_hooks.conf <<'EOF' >/dev/null
 HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)
 EOF
+ensure_mkinitcpio_plymouth_hook
 
 if command -v limine-mkinitcpio &>/dev/null; then
   sudo limine-mkinitcpio

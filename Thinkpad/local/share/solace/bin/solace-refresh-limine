@@ -1,26 +1,180 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
 # solace:summary=Overwrite the user config for the Limine bootloader and rebuild it.
 # solace:requires-sudo=true
+
+SOLACE_PATH="${SOLACE_PATH:-$HOME/.local/share/solace}"
+LIMINE_SPLASH_ARGS="quiet splash loglevel=0 systemd.show_status=false rd.udev.log_level=0 vt.global_cursor_default=0"
+LIMINE_DEFAULT="$SOLACE_PATH/default/limine/default.conf"
+LIMINE_THEME="$SOLACE_PATH/default/limine/limine.conf"
+LIMINE_SPLASH="$SOLACE_PATH/default/limine/splash-solace.bmp"
+
+find_limine_configs() {
+  local candidate
+  for candidate in \
+    /boot/limine/limine.conf \
+    /boot/limine.conf \
+    /boot/EFI/arch-limine/limine.conf \
+    /boot/EFI/BOOT/limine.conf \
+    /boot/EFI/limine/limine.conf; do
+    [[ -f "$candidate" ]] && printf '%s\n' "$candidate"
+  done
+
+  find /boot -maxdepth 5 -type f \( -iname 'limine.conf' -o -iname 'limine.cfg' \) 2>/dev/null | sort
+}
+
+extract_limine_base_cmdline() {
+  local limine_config
+  local cmdline=""
+
+  for limine_config in "$@"; do
+    [[ -f "$limine_config" ]] || continue
+    cmdline="$(sed -n 's/^[[:space:]]*cmdline:[[:space:]]*//p' "$limine_config" | head -n1)"
+    [[ -n "$cmdline" ]] && break
+  done
+
+  if [[ -z "$cmdline" && -r /proc/cmdline ]]; then
+    cmdline="$(cat /proc/cmdline)"
+  fi
+
+  for arg in $LIMINE_SPLASH_ARGS; do
+    cmdline="$(printf '%s\n' "$cmdline" | sed -E "s/(^|[[:space:]])${arg//./\\.}([[:space:]]|$)/ /g")"
+  done
+  printf '%s\n' "$cmdline" | tr -s '[:space:]' ' ' | sed -E 's/^ //; s/ $//'
+}
+
+ensure_limine_default_config() {
+  local default_limine="/etc/default/limine"
+  local dropin="/etc/limine-entry-tool.d/solace-boot-visuals.conf"
+  local tmp
+  local base_cmdline
+  local escaped_cmdline
+
+  base_cmdline="$(extract_limine_base_cmdline "$@")"
+  escaped_cmdline="${base_cmdline//\\/\\\\}"
+  escaped_cmdline="${escaped_cmdline//&/\\&}"
+  escaped_cmdline="${escaped_cmdline//|/\\|}"
+  escaped_cmdline="${escaped_cmdline//\"/\\\"}"
+
+  sudo install -d -m 0755 /etc/limine-entry-tool.d
+  printf 'KERNEL_CMDLINE[default]+=" %s"\n' "$LIMINE_SPLASH_ARGS" | sudo tee "$dropin" >/dev/null
+
+  tmp="$(mktemp)"
+  if [[ -f "$default_limine" ]]; then
+    sudo cp "$default_limine" "$default_limine.bak"
+    awk '
+      /^# Solace boot visuals$/ { skip = 1; next }
+      skip && /^# End Solace boot visuals$/ { skip = 0; next }
+      !skip { print }
+    ' "$default_limine" >"$tmp"
+    {
+      printf '\n# Solace boot visuals\n'
+      printf 'KERNEL_CMDLINE[default]+=" %s"\n' "$LIMINE_SPLASH_ARGS"
+      if ! grep -q '^ENABLE_UKI=' "$default_limine"; then
+        printf 'ENABLE_UKI=yes\n'
+      fi
+      if ! grep -q '^CUSTOM_UKI_NAME=' "$default_limine"; then
+        printf 'CUSTOM_UKI_NAME="solace"\n'
+      fi
+      if ! grep -q '^ENABLE_LIMINE_FALLBACK=' "$default_limine"; then
+        printf 'ENABLE_LIMINE_FALLBACK=yes\n'
+      fi
+      printf '# End Solace boot visuals\n'
+    } >>"$tmp"
+  elif [[ -f "$LIMINE_DEFAULT" ]]; then
+    sed "s|@@CMDLINE@@|$escaped_cmdline|g" "$LIMINE_DEFAULT" >"$tmp"
+  else
+    {
+      printf 'TARGET_OS_NAME="Solace"\n'
+      printf 'ESP_PATH="/boot"\n'
+      printf 'KERNEL_CMDLINE[default]+="%s"\n' "$escaped_cmdline"
+      printf 'KERNEL_CMDLINE[default]+=" %s"\n' "$LIMINE_SPLASH_ARGS"
+      printf 'ENABLE_UKI=yes\n'
+      printf 'CUSTOM_UKI_NAME="solace"\n'
+      printf 'ENABLE_LIMINE_FALLBACK=yes\n'
+    } >"$tmp"
+  fi
+
+  sudo install -m 0644 "$tmp" "$default_limine"
+  rm -f "$tmp"
+}
+
+ensure_limine_splash_cmdline() {
+  local limine_config="$1"
+  local tmp
+
+  [[ -f "$limine_config" ]] || return 0
+  grep -Eq '^[[:space:]]*cmdline:' "$limine_config" || return 0
+
+  tmp="$(mktemp)"
+  awk '
+    /^[[:space:]]*cmdline:/ {
+      line = $0
+      if (line !~ /(^|[[:space:]])quiet([[:space:]]|$)/) line = line " quiet"
+      if (line !~ /(^|[[:space:]])splash([[:space:]]|$)/) line = line " splash"
+      if (line !~ /(^|[[:space:]])loglevel=/) line = line " loglevel=0"
+      if (line !~ /(^|[[:space:]])systemd\.show_status=/) line = line " systemd.show_status=false"
+      if (line !~ /(^|[[:space:]])rd\.udev\.log_level=/) line = line " rd.udev.log_level=0"
+      if (line !~ /(^|[[:space:]])vt\.global_cursor_default=/) line = line " vt.global_cursor_default=0"
+      print line
+      next
+    }
+    { print }
+  ' "$limine_config" >"$tmp"
+  sudo install -m 0644 "$tmp" "$limine_config"
+  rm -f "$tmp"
+}
+
+merge_limine_theme() {
+  local limine_config="$1"
+  local tmp
+
+  [[ -f "$LIMINE_THEME" ]] || return 0
+  tmp="$(mktemp)"
+  {
+    cat "$LIMINE_THEME"
+    printf '\n'
+    awk '
+      BEGIN {
+        split("interface_branding interface_branding_color interface_help_color interface_help_color_bright hash_mismatch_panic term_background backdrop term_palette term_palette_bright term_foreground term_foreground_bright term_background_bright", keys, " ")
+        for (i in keys) theme_keys[keys[i]] = 1
+      }
+      /^[[:space:]]*### Read more at config document:/ { next }
+      /^[[:space:]]*# Terminal colors/ { next }
+      /^[[:space:]]*# Text colors/ { next }
+      /^[[:space:]]*[A-Za-z0-9_]+[[:space:]]*:/ {
+        key = $0
+        sub(/^[[:space:]]*/, "", key)
+        sub(/[[:space:]]*:.*/, "", key)
+        if (theme_keys[key]) next
+      }
+      { print }
+    ' "$limine_config"
+  } >>"$tmp"
+  sudo install -m 0644 "$tmp" "$limine_config"
+  rm -f "$tmp"
+}
 
 if [[ -f /boot/EFI/Linux/solace_linux.efi ]] && [[ -f /boot/EFI/Linux/$(cat /etc/machine-id)_linux.efi ]]; then
   echo "Cleanup extra UKI"
   sudo rm -f /boot/EFI/Linux/$(cat /etc/machine-id)_linux.efi
 fi
-echo "Resetting limine config"
 
-if [[ -f /boot/limine/limine.conf ]]; then
-  limine_config="/boot/limine/limine.conf"
-elif [[ -f /boot/limine.conf ]]; then
-  limine_config="/boot/limine.conf"
-else
+mapfile -t limine_configs < <(find_limine_configs | awk '!seen[$0]++')
+if [[ ${#limine_configs[@]} -eq 0 ]]; then
   echo "Error: Limine config not found" >&2
   exit 1
 fi
 
-sudo cp "$limine_config" "$limine_config.bak"
-sudo cp ~/.local/share/solace/default/limine/limine.conf "$limine_config"
-sudo install -Dm644 ~/.local/share/solace/default/limine/splash-solace.bmp /usr/share/systemd/bootctl/splash-solace.bmp
+echo "Refreshing Limine generator defaults and theme"
+for limine_config in "${limine_configs[@]}"; do
+  sudo cp "$limine_config" "$limine_config.bak"
+done
+
+ensure_limine_default_config "${limine_configs[@]}"
+sudo install -Dm644 "$LIMINE_SPLASH" /usr/share/systemd/bootctl/splash-solace.bmp
+
 for preset in /etc/mkinitcpio.d/*.preset; do
   [[ -f "$preset" ]] || continue
   if grep -q '^default_options=' "$preset"; then
@@ -36,5 +190,11 @@ else
   sudo mkinitcpio -P
 fi
 
-sudo limine-update
-sudo limine-snapper-sync
+mapfile -t limine_configs < <(find_limine_configs | awk '!seen[$0]++')
+for limine_config in "${limine_configs[@]}"; do
+  merge_limine_theme "$limine_config"
+  ensure_limine_splash_cmdline "$limine_config"
+done
+
+command -v limine-update &>/dev/null && sudo limine-update
+command -v limine-snapper-sync &>/dev/null && sudo limine-snapper-sync
