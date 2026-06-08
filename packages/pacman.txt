@@ -63,6 +63,7 @@ waybar
 weston
 alacritty
 foot
+obsidian
 mako
 pipewire
 pipewire-pulse
