@@ -102,4 +102,3 @@ wtype
 zed
 zellij
 zoxide
-nwg-displays

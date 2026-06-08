@@ -9,5 +9,6 @@ evdi-dkms
 displaylink
 elephant-all-bin
 walker-bin
+hyprmon
 visual-studio-code
 zen-browser-bin
