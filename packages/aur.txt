@@ -8,7 +8,6 @@ aether
 evdi-dkms
 displaylink
 elephant-all-bin
-mpvpaper
 walker-bin
 visual-studio-code
 zen-browser-bin

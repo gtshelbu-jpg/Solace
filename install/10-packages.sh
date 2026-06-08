@@ -32,10 +32,10 @@ else
 fi
 
 if [[ ${#official_packages[@]} -gt 0 ]]; then
-  log "Installing official packages from $PKG_FILE"
+  log "Installing ${#official_packages[@]} official packages from $PKG_FILE"
   if [[ "$DRY_RUN" -eq 1 ]]; then
     log "DRY: sudo pacman -Syu --noconfirm"
-    log "DRY: sudo pacman -S --needed --noconfirm ${official_packages[*]}"
+    log "DRY: sudo pacman -S --needed --noconfirm ... (${#official_packages[@]} packages)"
   else
     run_cmd sudo pacman -Syu --noconfirm
     run_cmd sudo pacman -S --needed --noconfirm "${official_packages[@]}"
@@ -79,7 +79,7 @@ install_aur_packages() {
 }
 
 if [[ ${#aur_packages[@]} -gt 0 ]]; then
-  log "AUR packages listed in $AUR_FILE"
+  log "Installing ${#aur_packages[@]} AUR packages from $AUR_FILE"
   if [[ "$DRY_RUN" -eq 1 ]]; then
     for pkg in "${aur_packages[@]}"; do
       log "DRY: AUR install $pkg"

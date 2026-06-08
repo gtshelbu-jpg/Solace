@@ -7,7 +7,7 @@ shopt -s nullglob
 
 usage() {
   cat <<EOF
-Usage: install.sh [--dry-run] [--tablet|--no-tablet] [--only <packages|configs|services|login|postinstall>]
+Usage: install.sh [--dry-run] [--tablet|--no-tablet] [--only <packages|configs|services|login|boot|postinstall>]
 
 Runs the numbered install scripts in $SCRIPT_DIR.
 EOF
@@ -82,6 +82,14 @@ start_sudo_session() {
 
 start_sudo_session
 
+section "Solace installer"
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  log "Dry run: no system changes will be made."
+fi
+if [[ "$SOLACE_INSTALL_VERBOSE" != "1" ]]; then
+  log "Routine file-copy output is hidden. Set SOLACE_INSTALL_VERBOSE=1 for full detail."
+fi
+
 for s in "${SCRIPTS[@]}"; do
   [[ -f "$s" ]] || continue
   name="$(basename "$s")"
@@ -91,11 +99,12 @@ for s in "${SCRIPTS[@]}"; do
       configs)  [[ "$name" == 20-* ]] || continue;;
       services) [[ "$name" == 30-* || "$name" == 31-* ]] || continue;;
       login) [[ "$name" == 35-* ]] || continue;;
+      boot) [[ "$name" == 36-* ]] || continue;;
       postinstall) [[ "$name" == 40-* ]] || continue;;
       *) die "Unknown --only value: $ONLY";;
     esac
   fi
-  log "Running $name"
+  section "$name"
   if [[ "$DRY_RUN" -eq 1 ]]; then
     bash "$s" --dry-run
   else
@@ -103,4 +112,4 @@ for s in "${SCRIPTS[@]}"; do
   fi
 done
 
-log "Install run complete"
+success "Install run complete."

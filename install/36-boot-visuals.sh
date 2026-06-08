@@ -58,7 +58,7 @@ install_limine_theme() {
 
   log "Installing Solace Limine theme"
   if [[ "$DRY_RUN" -eq 1 ]]; then
-    log "DRY: would back up and replace $limine_config"
+    log "DRY: would back up and merge Solace theme settings into $limine_config"
     log "DRY: would install Solace UKI splash bitmap"
     log "DRY: would patch mkinitcpio presets with --splash"
     log "DRY: would rebuild initramfs/UKIs"
@@ -66,7 +66,7 @@ install_limine_theme() {
   fi
 
   backup_target "$limine_config"
-  run_cmd sudo cp "$LIMINE_SRC/limine.conf" "$limine_config"
+  merge_limine_theme "$limine_config"
   run_cmd sudo install -Dm644 "$LIMINE_SRC/splash-solace.bmp" /usr/share/systemd/bootctl/splash-solace.bmp
 
   local preset
@@ -78,6 +78,34 @@ install_limine_theme() {
       run_cmd sudo sed -i '/^default_uki=/a default_options="--splash /usr/share/systemd/bootctl/splash-solace.bmp"' "$preset"
     fi
   done
+}
+
+merge_limine_theme() {
+  local limine_config="$1"
+  local tmp
+  tmp="$(mktemp)"
+
+  awk '
+    BEGIN {
+      split("interface_branding interface_branding_color interface_help_color interface_help_color_bright hash_mismatch_panic term_background backdrop term_palette term_palette_bright term_foreground term_foreground_bright term_background_bright", keys, " ")
+      for (i in keys) theme_keys[keys[i]] = 1
+    }
+    /^[[:space:]]*[A-Za-z0-9_]+[[:space:]]*:/ {
+      key = $0
+      sub(/^[[:space:]]*/, "", key)
+      sub(/[[:space:]]*:.*/, "", key)
+      if (theme_keys[key]) next
+    }
+    { print }
+  ' "$limine_config" > "$tmp"
+
+  {
+    printf '\n'
+    cat "$LIMINE_SRC/limine.conf"
+  } >> "$tmp"
+
+  run_cmd sudo install -m 0644 "$tmp" "$limine_config"
+  rm -f "$tmp"
 }
 
 rebuild_boot_images() {
