@@ -1,1 +1,7 @@
-notify-send "    Learn Keybindings" "Super + K for cheatsheet.\nSuper + Space for application launcher.\nSuper + Alt + Space for Omarchy Menu." -u critical
+#!/usr/bin/env bash
+
+if command -v solace-welcome >/dev/null 2>&1; then
+  solace-welcome --force
+else
+  notify-send "Welcome to Solace" "Super + K opens keybindings. Super + Space opens the app launcher." -u critical
+fi

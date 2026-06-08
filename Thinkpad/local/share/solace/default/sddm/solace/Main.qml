@@ -89,7 +89,7 @@ Rectangle {
   Rectangle {
     id: panel
     width: Math.min(440, root.width - 64)
-    height: 430
+    height: 500
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
     anchors.rightMargin: Math.max(38, root.width * 0.09)
@@ -120,18 +120,40 @@ Rectangle {
         font.weight: Font.DemiBold
       }
 
-      TextInput {
-        id: username
-        text: root.currentUser
-        color: "#aeb7c8"
-        font.family: "JetBrainsMono Nerd Font"
-        font.pixelSize: 15
-        selectByMouse: true
+      Text {
+        text: "Username"
+        color: "#8d98ad"
+        font.family: "Inter"
+        font.pixelSize: 13
+      }
 
-        Keys.onPressed: {
-          if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            password.forceActiveFocus()
-            event.accepted = true
+      Rectangle {
+        width: parent.width
+        height: 46
+        radius: 10
+        color: "#66070b12"
+        border.color: username.activeFocus ? "#8bb8ff" : "#26ffffff"
+        border.width: 1
+
+        TextInput {
+          id: username
+          anchors.fill: parent
+          anchors.leftMargin: 16
+          anchors.rightMargin: 16
+          verticalAlignment: TextInput.AlignVCenter
+          text: root.currentUser
+          color: "#f6f7fb"
+          selectionColor: "#3b6aa5"
+          selectedTextColor: "#ffffff"
+          font.family: "JetBrainsMono Nerd Font"
+          font.pixelSize: 18
+          selectByMouse: true
+
+          Keys.onPressed: {
+            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+              password.forceActiveFocus()
+              event.accepted = true
+            }
           }
         }
       }

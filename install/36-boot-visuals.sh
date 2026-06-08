@@ -33,7 +33,7 @@ HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap conso
 EOF
 }
 
-find_limine_config() {
+find_limine_configs() {
   local candidate
   for candidate in \
     /boot/limine/limine.conf \
@@ -41,32 +41,45 @@ find_limine_config() {
     /boot/EFI/arch-limine/limine.conf \
     /boot/EFI/BOOT/limine.conf \
     /boot/EFI/limine/limine.conf; do
-    [[ -f "$candidate" ]] && { printf '%s\n' "$candidate"; return 0; }
+    [[ -f "$candidate" ]] && printf '%s\n' "$candidate"
   done
-  return 1
+
+  find /boot -maxdepth 5 -type f \( -iname 'limine.conf' -o -iname 'limine.cfg' \) 2>/dev/null \
+    | sort
+}
+
+find_limine_config() {
+  find_limine_configs | awk '!seen[$0]++ { print; exit }'
 }
 
 install_limine_theme() {
   [[ -d "$LIMINE_SRC" ]] || { warn "Missing Limine theme source: $LIMINE_SRC"; return 0; }
 
-  local limine_config=""
-  limine_config="$(find_limine_config || true)"
-  if [[ -z "$limine_config" ]]; then
+  local limine_configs=()
+  mapfile -t limine_configs < <(find_limine_configs | awk '!seen[$0]++')
+  if [[ ${#limine_configs[@]} -eq 0 ]]; then
     warn "No Limine config found; skipping Limine theme"
     return 0
   fi
 
   log "Installing Solace Limine theme"
   if [[ "$DRY_RUN" -eq 1 ]]; then
-    log "DRY: would prepare Solace Limine assets for $limine_config"
+    log "DRY: would prepare Solace Limine assets for ${#limine_configs[@]} config file(s)"
     log "DRY: would install Solace UKI splash bitmap"
     log "DRY: would patch mkinitcpio presets with --splash"
     log "DRY: would rebuild initramfs/UKIs"
-    log "DRY: would merge Solace theme settings into $limine_config after Limine regeneration"
+    log "DRY: would merge Solace theme settings after Limine regeneration"
+    for limine_config in "${limine_configs[@]}"; do
+      log "DRY: Limine config candidate: $limine_config"
+    done
     return 0
   fi
 
-  backup_target "$limine_config"
+  local limine_config
+  for limine_config in "${limine_configs[@]}"; do
+    backup_target "$limine_config"
+  done
+
   run_cmd sudo install -Dm644 "$LIMINE_SRC/splash-solace.bmp" /usr/share/systemd/bootctl/splash-solace.bmp
 
   local preset
@@ -131,8 +144,10 @@ install_plymouth_theme
 install_limine_theme
 rebuild_boot_images
 if [[ "$DRY_RUN" -eq 0 ]]; then
-  limine_config="$(find_limine_config || true)"
-  [[ -n "$limine_config" ]] && merge_limine_theme "$limine_config"
+  mapfile -t limine_configs < <(find_limine_configs | awk '!seen[$0]++')
+  for limine_config in "${limine_configs[@]}"; do
+    merge_limine_theme "$limine_config"
+  done
 fi
 
 log "Boot visuals configured where supported."
