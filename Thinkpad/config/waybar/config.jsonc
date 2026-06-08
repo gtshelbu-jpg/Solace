@@ -9,6 +9,7 @@
   "modules-center": ["clock", "custom/weather", "custom/update", "custom/voxtype", "custom/screenrecording-indicator", "custom/idle-indicator", "custom/notification-silencing-indicator"],
   "modules-right": [
     "group/tray-expander",
+    "custom/displaylink",
     "bluetooth",
     "network",
     "pulseaudio",
@@ -73,6 +74,13 @@
     "interval": 60,
     "tooltip": false,
     "on-click": "notify-send -u low \"$(solace-weather-status)\""
+  },
+  "custom/displaylink": {
+    "exec": "sh -c '${SOLACE_PATH:-$HOME/.local/share/solace}/default/waybar/indicators/displaylink.sh'",
+    "return-type": "json",
+    "interval": 5,
+    "tooltip": true,
+    "on-click": "sh -c 'notify-send -u low \"$(${SOLACE_PATH:-$HOME/.local/share/solace}/default/waybar/indicators/displaylink.sh --tooltip)\"'"
   },
   "network": {
     "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],

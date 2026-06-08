@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-exec "$HOME/.local/bin/solace-restart-waybar" "$@"
+exec "$HOME/.local/share/solace/bin/solace-restart-waybar" "$@"

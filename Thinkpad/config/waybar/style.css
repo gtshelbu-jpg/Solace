@@ -53,6 +53,19 @@ window#waybar {
   margin-right: 17px;
 }
 
+#custom-displaylink {
+  min-width: 12px;
+  margin-right: 14px;
+}
+
+#custom-displaylink.ready {
+  opacity: 0.72;
+}
+
+#custom-displaylink.warning {
+  color: #d79921;
+}
+
 #network {
   margin-right: 13px;
 }

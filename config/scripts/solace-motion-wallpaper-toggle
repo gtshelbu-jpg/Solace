@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-exec "$HOME/.local/bin/solace-motion-wallpaper-toggle" "$@"
+exec "$HOME/.local/share/solace/bin/solace-motion-wallpaper-toggle" "$@"

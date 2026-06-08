@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-exec "$HOME/.local/bin/solace-launch-or-focus" "$@"
+exec "$HOME/.local/share/solace/bin/solace-launch-or-focus" "$@"

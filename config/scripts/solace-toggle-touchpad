@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-exec "$HOME/.local/bin/solace-toggle-touchpad" "$@"
+exec "$HOME/.local/share/solace/bin/solace-toggle-touchpad" "$@"
