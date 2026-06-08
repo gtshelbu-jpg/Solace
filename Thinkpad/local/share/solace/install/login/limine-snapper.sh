@@ -6,6 +6,16 @@ EOF
 MODULES+=(thunderbolt)
 EOF
 
+  sudo install -Dm644 "$SOLACE_PATH/default/limine/splash-solace.bmp" /usr/share/systemd/bootctl/splash-solace.bmp
+  for preset in /etc/mkinitcpio.d/*.preset; do
+    [[ -f "$preset" ]] || continue
+    if grep -q '^default_options=' "$preset"; then
+      sudo sed -i 's|^default_options=.*|default_options="--splash /usr/share/systemd/bootctl/splash-solace.bmp"|' "$preset"
+    else
+      sudo sed -i '/^default_uki=/a default_options="--splash /usr/share/systemd/bootctl/splash-solace.bmp"' "$preset"
+    fi
+  done
+
   # Detect boot mode
   [[ -d /sys/firmware/efi ]] && EFI=true
 

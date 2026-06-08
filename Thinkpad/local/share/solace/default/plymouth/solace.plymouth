@@ -6,6 +6,6 @@ ModuleName=script
 [script]
 ImageDir=/usr/share/plymouth/themes/solace
 ScriptFile=/usr/share/plymouth/themes/solace/solace.script
-ConsoleLogBackgroundColor=0x1a1b26
+ConsoleLogBackgroundColor=0x000000
 MonospaceFont=Cantarell 11
 Font=Cantarell 11
