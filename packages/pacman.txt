@@ -17,7 +17,9 @@
 
 # Add packages below this line
 base-devel
+dkms
 networkmanager
+linux-headers
 linux-firmware
 git
 jq

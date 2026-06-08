@@ -5,6 +5,8 @@
 
 # Add AUR package names below this line
 aether
+evdi-dkms
+displaylink
 elephant-all-bin
 mpvpaper
 walker-bin
