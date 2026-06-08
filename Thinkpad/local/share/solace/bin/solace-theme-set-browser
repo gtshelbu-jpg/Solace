@@ -1,9 +1,17 @@
 #!/bin/bash
 
-# solace:summary=Apply the current theme color to Chromium, Chrome, Edge, and Brave
+# solace:summary=Apply the current theme color/mode to supported browsers
 # solace:hidden=true
 
-CHROMIUM_THEME=~/.config/solace/current/theme/chromium.theme
+SOLACE_PATH="${SOLACE_PATH:-$HOME/.local/share/solace}"
+CHROMIUM_THEME="$HOME/.config/solace/current/theme/chromium.theme"
+FIREFOX_POLICY_SCHEME=0
+FIREFOX_SYSTEM_DARK=1
+
+if [[ -f "$HOME/.config/solace/current/theme/light.mode" ]]; then
+  FIREFOX_POLICY_SCHEME=1
+  FIREFOX_SYSTEM_DARK=0
+fi
 
 if [[ -f $CHROMIUM_THEME ]]; then
   THEME_RGB_COLOR=$(<$CHROMIUM_THEME)
@@ -20,12 +28,56 @@ set_browser_policy() {
   echo "{\"BrowserThemeColor\": \"$THEME_HEX_COLOR\", \"BrowserColorScheme\": \"device\"}" | tee "$policy_dir/color.json" >/dev/null
 }
 
+set_firefox_policy() {
+  local distribution_dir="$1"
+  local policy_file="$distribution_dir/policies.json"
+  local tmp
+
+  [[ -d $distribution_dir ]] || return
+  tmp="$(mktemp)"
+
+  if [[ -f $policy_file ]]; then
+    jq \
+      --argjson color_scheme "$FIREFOX_POLICY_SCHEME" \
+      --argjson system_dark "$FIREFOX_SYSTEM_DARK" \
+      '
+        .policies //= {} |
+        .policies.Preferences //= {} |
+        .policies.Preferences["layout.css.prefers-color-scheme.content-override"] = {"Value": $color_scheme, "Status": "default"} |
+        .policies.Preferences["ui.systemUsesDarkTheme"] = {"Value": $system_dark, "Status": "default"} |
+        .policies.Preferences["zen.view.window.scheme"] = {"Value": $color_scheme, "Status": "default"}
+      ' "$policy_file" >"$tmp"
+  else
+    jq -n \
+      --argjson color_scheme "$FIREFOX_POLICY_SCHEME" \
+      --argjson system_dark "$FIREFOX_SYSTEM_DARK" \
+      '{
+        "policies": {
+          "Preferences": {
+            "layout.css.prefers-color-scheme.content-override": {"Value": $color_scheme, "Status": "default"},
+            "ui.systemUsesDarkTheme": {"Value": $system_dark, "Status": "default"},
+            "zen.view.window.scheme": {"Value": $color_scheme, "Status": "default"}
+          }
+        }
+      }' >"$tmp"
+  fi
+
+  mv "$tmp" "$policy_file"
+}
+
 refresh_running_browser() {
   local process="$1"
   local command="$2"
   local pgrep_args="${3:--x}"
+  local cmd_present="$SOLACE_PATH/bin/solace-cmd-present"
 
-  if solace-cmd-present "$command" && pgrep $pgrep_args "$process" >/dev/null; then
+  if [[ -x "$cmd_present" ]]; then
+    "$cmd_present" "$command" || return
+  elif ! command -v "$command" >/dev/null 2>&1; then
+    return
+  fi
+
+  if pgrep $pgrep_args "$process" >/dev/null; then
     "$command" --refresh-platform-policy --no-startup-window &>/dev/null
   fi
 }
@@ -42,3 +94,6 @@ refresh_running_browser msedge microsoft-edge-stable
 set_browser_policy /etc/brave/policies/managed
 refresh_running_browser brave brave
 refresh_running_browser brave-origin-beta brave-origin-beta -f
+
+set_firefox_policy /usr/lib/firefox/distribution
+set_firefox_policy /opt/zen-browser-bin/distribution

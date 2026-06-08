@@ -29,6 +29,7 @@ run_installed_helper() {
 run_installed_helper solace-refresh-applications
 run_installed_helper solace-refresh-walker
 run_installed_helper solace-theme-set-gnome
+run_installed_helper solace-theme-set-browser
 run_installed_helper solace-theme-set-vscode
 run_installed_helper solace-refresh-chromium
 log "Log out and back in so Hyprland and user-session services pick up the new config links."
