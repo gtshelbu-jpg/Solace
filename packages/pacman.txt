@@ -64,6 +64,7 @@ weston
 alacritty
 foot
 obsidian
+syncthing
 mako
 pipewire
 pipewire-pulse
