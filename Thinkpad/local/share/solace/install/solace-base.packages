@@ -146,6 +146,8 @@ woff2-font-awesome
 xdg-desktop-portal-gtk
 xdg-desktop-portal-hyprland
 xmlstarlet
+xorg-server
+xorg-xwayland
 xournalpp
 yaru-icon-theme
 yay

@@ -64,6 +64,8 @@ wireplumber
 xdg-desktop-portal
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
+xorg-server
+xorg-xwayland
 wl-clipboard
 grim
 slurp
