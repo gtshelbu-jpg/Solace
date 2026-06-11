@@ -6,6 +6,14 @@ The project recreates the parts of a preferred Hyprland workflow without tying t
 
 This repo is not a full OS installer; it assumes Arch Linux is already installed and bootable, then applies packages, configs, services, themes, and workflow preferences for a Hyprland desktop.
 
+## Screenshots
+
+![Solace desktop with Waybar](docs/screenshots/desktop.webp)
+
+![Solace workflow with launcher and terminal tools](docs/screenshots/desktop-workflow.webp)
+
+![Solace first-boot welcome guide](docs/screenshots/welcome-guide.webp)
+
 ## Goals
 
 - Use upstream Arch repositories only: `core`, `extra`, and optionally `multilib`

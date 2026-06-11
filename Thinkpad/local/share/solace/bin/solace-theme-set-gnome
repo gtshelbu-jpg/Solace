@@ -32,11 +32,13 @@ else
 fi
 
 if [[ -f ~/.config/solace/current/theme/light.mode ]]; then
+  gtk_theme_env="Adwaita"
   set_gsetting color-scheme "prefer-light"
   set_gsetting gtk-theme "Adwaita"
   set_gsetting gtk-application-prefer-dark-theme false
   write_gtk_settings false "Adwaita" "$icon_theme"
 else
+  gtk_theme_env="Adwaita:dark"
   set_gsetting color-scheme "prefer-dark"
   set_gsetting gtk-theme "Adwaita-dark"
   set_gsetting gtk-application-prefer-dark-theme true
@@ -44,3 +46,15 @@ else
 fi
 
 set_gsetting icon-theme "$icon_theme"
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl --user set-environment "GTK_THEME=$gtk_theme_env" >/dev/null 2>&1 || true
+fi
+
+if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+  GTK_THEME="$gtk_theme_env" dbus-update-activation-environment --systemd GTK_THEME >/dev/null 2>&1 || true
+fi
+
+if command -v hyprctl >/dev/null 2>&1; then
+  hyprctl setenv GTK_THEME "$gtk_theme_env" >/dev/null 2>&1 || true
+fi
