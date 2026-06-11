@@ -83,7 +83,7 @@ aur_install_and_launch() {
 show_learn_menu() {
   case $(menu "Learn" "  Keybindings\n  Solace\n  Hyprland\n󰣇  Arch\n  Neovim\n󱆃  Bash") in
   *Keybindings*) solace-menu-keybindings ;;
-  *Solace*) solace-launch-webapp "https://learn.omacom.io/2/the-solace-manual" ;;
+  *Solace*) solace-welcome --force ;;
   *Hyprland*) solace-launch-webapp "https://wiki.hypr.land/" ;;
   *Arch*) solace-launch-webapp "https://wiki.archlinux.org/title/Main_page" ;;
   *Bash*) solace-launch-webapp "https://devhints.io/bash" ;;
@@ -495,7 +495,7 @@ show_setup_system_menu() {
 }
 
 show_install_menu() {
-  case $(menu "Install" "󰣇  Package\n󰣇  AUR\n  Web App\n  TUI\n  Service\n  Style\n󰵮  Development\n  Editor\n  Terminal\n  Browser\n󱚤  AI\n  Gaming\n󰍲  Windows") in
+  case $(menu "Install" "󰣇  Package\n󰣇  AUR\n  Web App\n  TUI\n  Service\n  Style\n󰵮  Development\n  Editor\n  Terminal\n  Browser\n󱚤  AI\n  Gaming") in
   *Package*) terminal solace-pkg-install ;;
   *AUR*) terminal solace-pkg-aur-install ;;
   *Web*) present_terminal solace-webapp-install ;;
@@ -508,7 +508,6 @@ show_install_menu() {
   *Browser*) show_install_browser_menu ;;
   *Gaming*) show_install_gaming_menu ;;
   *AI*) show_install_ai_menu ;;
-  *Windows*) present_terminal "solace-windows-vm install" ;;
   *) show_main_menu ;;
   esac
 }
@@ -659,7 +658,7 @@ show_install_elixir_menu() {
 }
 
 show_remove_menu() {
-  case $(menu "Remove" "󰣇  Package\n  Web App\n  TUI\n󰵮  Development\n󰸌  Theme\n  Browser\n  Dictation\n  Gaming\n󰍲  Windows\n󰏓  Preinstalls\n  Security") in
+  case $(menu "Remove" "󰣇  Package\n  Web App\n  TUI\n󰵮  Development\n󰸌  Theme\n  Browser\n  Dictation\n  Gaming\n󰍲  Windows\n  Security") in
   *Package*) terminal solace-pkg-remove ;;
   *Web*) present_terminal solace-webapp-remove ;;
   *TUI*) present_terminal solace-tui-remove ;;
@@ -669,7 +668,6 @@ show_remove_menu() {
   *Dictation*) present_terminal solace-voxtype-remove ;;
   *Gaming*) show_remove_gaming_menu ;;
   *Windows*) present_terminal "solace-windows-vm remove" ;;
-  *Preinstalls*) present_terminal solace-remove-preinstalls ;;
   *Security*) show_remove_security_menu ;;
   *) show_main_menu ;;
   esac
@@ -756,9 +754,8 @@ show_remove_elixir_menu() {
 }
 
 show_update_menu() {
-  case $(menu "Update" "  Solace\n󰔫  Channel\n  Config\n󰸌  Extra Themes\n  Process\n󰇅  Hardware\n  Firmware\n  Password\n  Timezone\n  Time") in
-  *Solace*) present_terminal solace-update ;;
-  *Channel*) show_update_channel_menu ;;
+  case $(menu "Update" "  System\n  Config\n󰸌  Extra Themes\n  Process\n󰇅  Hardware\n  Firmware\n  Password\n  Timezone\n  Time") in
+  *System*) present_terminal "solace-snapshot create || (( \$? == 127 )); solace-update-perform" ;;
   *Config*) show_update_config_menu ;;
   *Themes*) present_terminal solace-theme-update ;;
   *Process*) show_update_process_menu ;;
@@ -847,7 +844,7 @@ show_system_menu() {
 }
 
 show_main_menu() {
-  go_to_menu "$(menu "Go" "󰀻  Apps\n󰧑  Learn\n󱓞  Trigger\n  Style\n  Setup\n󰉉  Install\n󰭌  Remove\n  Update\n  About\n  System")"
+  go_to_menu "$(menu "Go" "󰀻  Apps\n󰧑  Learn\n󱓞  Trigger\n  Setup\n󰉉  Install\n󰭌  Remove\n  Update\n  About\n  System")"
 }
 
 go_to_menu() {

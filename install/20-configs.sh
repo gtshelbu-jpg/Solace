@@ -217,6 +217,7 @@ install_snapshot_aether_assets() {
 
 install_snapshot_solace_assets() {
   local name
+  local asset
 
   for name in applications config default themes; do
     [[ -d "$SNAPSHOT_SOLACE/$name" ]] || continue
@@ -228,6 +229,11 @@ install_snapshot_solace_assets() {
         copy_snapshot_entry "$SNAPSHOT_SOLACE/$name" "$LOCAL_SHARE_HOME/$name"
         ;;
     esac
+  done
+
+  for asset in logo.txt logo.svg; do
+    [[ -f "$SNAPSHOT_SOLACE/$asset" ]] || continue
+    safe_copy "$SNAPSHOT_SOLACE/$asset" "$LOCAL_SHARE_HOME/$asset"
   done
 
   install_snapshot_bins

@@ -8,20 +8,47 @@ STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/solace"
 DONE_MARKER="$STATE_DIR/welcome.done"
 FORCE=0
 DISPLAY_ONLY=0
+PLAIN=0
+SOLACE_HOME="${SOLACE_PATH:-$HOME/.local/share/solace}"
+DOCS_DIR="${SOLACE_DOCS_DIR:-$SOLACE_HOME/default/docs/welcome}"
+LOGO_PATH="${SOLACE_LOGO_PATH:-}"
 
 for arg in "$@"; do
   case "$arg" in
     --force) FORCE=1 ;;
     --first-run) ;;
     --display) DISPLAY_ONLY=1 ;;
+    --plain) PLAIN=1 ;;
   esac
 done
 
 mkdir -p "$STATE_DIR"
 
-if [[ "$FORCE" -eq 0 && -f "$DONE_MARKER" ]]; then
+if [[ "$FORCE" -eq 0 && "$DISPLAY_ONLY" -eq 0 && -f "$DONE_MARKER" ]]; then
   exit 0
 fi
+
+find_logo_path() {
+  local candidate
+
+  if [[ -n "$LOGO_PATH" && -f "$LOGO_PATH" ]]; then
+    printf '%s\n' "$LOGO_PATH"
+    return 0
+  fi
+
+  for candidate in \
+    "$SOLACE_HOME/logo.txt" \
+    "$SOLACE_HOME/default/sddm/solace/logo.txt" \
+    "$HOME/.config/solace/branding/about.txt" \
+    "$HOME/.config/solace/branding/screensaver.txt"; do
+    if [[ -f "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  return 1
+}
 
 launch_terminal() {
   if command -v xdg-terminal-exec >/dev/null 2>&1; then
@@ -36,56 +63,129 @@ launch_terminal() {
 }
 
 show_plain() {
+  local logo_path
+  logo_path="$(find_logo_path || true)"
+  if [[ -n "$logo_path" ]]; then
+    echo
+    cat "$logo_path"
+  fi
+
   cat <<'EOF'
 
 Welcome to Solace
 
-A personal Arch workflow with the sharp edges filed down just enough.
+Fast, focused Arch + Hyprland with a few friendly handrails.
 
 Start here
-  Super + Space      App launcher
-  Super + K          Search keybindings
-  Super + Enter      Terminal
-  Super + Shift + F  Files
-  Super + Alt + Space Solace menu
-  Super + Escape     System menu
+  Super + Space        App launcher
+  Super + Alt + Space  Solace menu
+  Super + K            Search keybindings
+  Super + Enter        Terminal
+  Super + Escape       System menu
 
-Fresh install notes
-  Walker is your launcher and menu search surface.
-  Waybar, SDDM, Plymouth, GTK apps, and VS Code are themed by Solace defaults.
-  NetworkManager, iwd, and impala are set up for Wi-Fi.
+Learn
+  Run `solace-welcome --force` any time to reopen this guide.
+  Open Solace Menu > Learn > Solace to browse it from the desktop.
 
 EOF
 }
 
-show_gum() {
+theme_color() {
+  local key="$1"
+  local fallback="$2"
+  local colors="$HOME/.config/solace/current/theme/colors.toml"
+
+  if [[ -f "$colors" ]]; then
+    local value
+    value="$(sed -n "s/^${key}[[:space:]]*=[[:space:]]*[\"']\\([^\"']*\\)[\"'].*/\\1/p" "$colors" | head -n1)"
+    [[ -n "$value" ]] && {
+      printf '%s\n' "$value"
+      return
+    }
+  fi
+
+  printf '%s\n' "$fallback"
+}
+
+print_header() {
+  local accent foreground muted background logo_path
+  accent="$(theme_color accent "#7b5daf")"
+  foreground="$(theme_color foreground "#ffffff")"
+  muted="$(theme_color muted "#9bb8ff")"
+  background="$(theme_color background "#00020a")"
+  logo_path="$(find_logo_path || true)"
+
+  if [[ -n "$logo_path" ]]; then
+    gum style --foreground "$accent" --margin "1 0 1 2" "$(<"$logo_path")"
+    echo
+  fi
+
   gum style \
-    --foreground "#d8e2ff" \
-    --border-foreground "#5f86d9" \
+    --foreground "$foreground" \
+    --background "$background" \
+    --border-foreground "$accent" \
     --border rounded \
     --padding "1 3" \
     --margin "1" \
-    "Solace" \
+    "Welcome to Solace" \
     "" \
-    "A personal Arch workflow with the sharp edges filed down just enough."
+    "Fast, focused Arch + Hyprland with a few friendly handrails."
 
-  gum style --foreground "#9bb8ff" "Start here"
-  gum format <<'EOF'
-- `Super + Space` opens Walker, the app launcher.
-- `Super + K` searches every Hyprland keybinding.
-- `Super + Enter` opens a terminal.
-- `Super + Shift + F` opens Files.
-- `Super + Alt + Space` opens the Solace menu.
-- `Super + Escape` opens the system menu.
-EOF
-
+  gum style --foreground "$muted" "Pick a topic, read what you need, and wander back any time."
   echo
-  gum style --foreground "#9bb8ff" "Fresh install notes"
-  gum format <<'EOF'
-- Waybar, SDDM, Plymouth, GTK apps, and VS Code are themed by Solace defaults.
-- NetworkManager, iwd, and impala are set up for Wi-Fi.
-- DisplayLink support is installed and enabled when the packages are present.
+}
+
+doc_path_for_label() {
+  case "$1" in
+    *Start*) printf '%s/start-here.md\n' "$DOCS_DIR" ;;
+    *Keyboard*) printf '%s/keyboard.md\n' "$DOCS_DIR" ;;
+    *System*) printf '%s/system.md\n' "$DOCS_DIR" ;;
+    *Apps*) printf '%s/apps.md\n' "$DOCS_DIR" ;;
+    *Displays*) printf '%s/displays.md\n' "$DOCS_DIR" ;;
+    *Troubleshooting*) printf '%s/troubleshooting.md\n' "$DOCS_DIR" ;;
+    *) return 1 ;;
+  esac
+}
+
+show_doc() {
+  local label="$1"
+  local path
+  path="$(doc_path_for_label "$label")" || return 0
+
+  clear 2>/dev/null || true
+  print_header
+  if [[ -f "$path" ]]; then
+    gum format <"$path"
+  else
+    gum style --foreground "#f7768e" "Missing documentation page:"
+    echo "$path"
+  fi
+  echo
+  gum confirm --affirmative "Back" --negative "Close" "Return to the guide?" || exit 0
+}
+
+show_gum() {
+  local options choice
+  options=$'Start Here\nKeyboard And Navigation\nSystem Care\nApps And Defaults\nDisplays And Docks\nTroubleshooting\nClose'
+
+  while true; do
+    clear 2>/dev/null || true
+    print_header
+
+    gum format <<'EOF'
+## Quick keys
+
+- `Super + Space`: launch apps
+- `Super + Alt + Space`: open the Solace menu
+- `Super + K`: search keybindings
+- `Super + Enter`: open a terminal
 EOF
+
+    echo
+    choice="$(printf '%s\n' "$options" | gum choose --height 10 --header "Open a page")" || exit 0
+    [[ "$choice" == "Close" || -z "$choice" ]] && exit 0
+    show_doc "$choice"
+  done
 }
 
 if [[ "${SOLACE_WELCOME_IN_TERMINAL:-0}" != "1" && "$DISPLAY_ONLY" -eq 0 ]]; then
@@ -95,7 +195,7 @@ fi
 [[ "$FORCE" -eq 1 ]] || touch "$DONE_MARKER"
 
 clear 2>/dev/null || true
-if command -v gum >/dev/null 2>&1; then
+if [[ "$PLAIN" -eq 0 ]] && command -v gum >/dev/null 2>&1; then
   show_gum
 else
   show_plain
