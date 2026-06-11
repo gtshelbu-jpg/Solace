@@ -3,18 +3,44 @@
 # solace:summary=Apply the current theme to GNOME color mode and icon settings
 # solace:hidden=true
 
-if [[ -f ~/.config/solace/current/theme/light.mode ]]; then
-  gsettings set org.gnome.desktop.interface color-scheme "prefer-light"
-  gsettings set org.gnome.desktop.interface gtk-theme "Adwaita"
-else
-  gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
-  gsettings set org.gnome.desktop.interface gtk-theme "Adwaita-dark"
-fi
+set_gsetting() {
+  gsettings set org.gnome.desktop.interface "$1" "$2" >/dev/null 2>&1 || true
+}
+
+write_gtk_settings() {
+  local prefer_dark="$1"
+  local gtk_theme="$2"
+  local icon_theme="$3"
+
+  mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"
+  for settings in "$HOME/.config/gtk-3.0/settings.ini" "$HOME/.config/gtk-4.0/settings.ini"; do
+    cat >"$settings" <<EOF
+[Settings]
+gtk-application-prefer-dark-theme=$prefer_dark
+gtk-theme-name=$gtk_theme
+gtk-icon-theme-name=$icon_theme
+EOF
+  done
+}
 
 # Change gnome icon theme color
 GNOME_ICONS_THEME=~/.config/solace/current/theme/icons.theme
 if [[ -f $GNOME_ICONS_THEME ]]; then
-  gsettings set org.gnome.desktop.interface icon-theme "$(<$GNOME_ICONS_THEME)"
+  icon_theme="$(<"$GNOME_ICONS_THEME")"
 else
-  gsettings set org.gnome.desktop.interface icon-theme "Yaru-blue"
+  icon_theme="Yaru-blue"
 fi
+
+if [[ -f ~/.config/solace/current/theme/light.mode ]]; then
+  set_gsetting color-scheme "prefer-light"
+  set_gsetting gtk-theme "Adwaita"
+  set_gsetting gtk-application-prefer-dark-theme false
+  write_gtk_settings false "Adwaita" "$icon_theme"
+else
+  set_gsetting color-scheme "prefer-dark"
+  set_gsetting gtk-theme "Adwaita-dark"
+  set_gsetting gtk-application-prefer-dark-theme true
+  write_gtk_settings true "Adwaita-dark" "$icon_theme"
+fi
+
+set_gsetting icon-theme "$icon_theme"

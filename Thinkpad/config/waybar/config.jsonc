@@ -59,7 +59,7 @@
   "cpu": {
     "interval": 5,
     "format": "󰍛",
-    "on-click": "solace-launch-or-focus-tui btop",
+    "on-click": "uwsm-app -- solace-launch-or-focus-tui btop",
     "on-click-right": "alacritty"
   },
   "clock": {
@@ -80,7 +80,7 @@
     "return-type": "json",
     "interval": 5,
     "tooltip": true,
-    "on-click": "sh -c 'notify-send -u low \"$(${SOLACE_PATH:-$HOME/.local/share/solace}/default/waybar/indicators/displaylink.sh --tooltip)\"'"
+    "on-click": "uwsm-app -- xdg-terminal-exec --app-id=org.solace.hyprmon -e hyprmon"
   },
   "network": {
     "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
@@ -93,7 +93,7 @@
     "tooltip-format-disconnected": "Disconnected",
     "interval": 3,
     "spacing": 1,
-    "on-click": "solace-launch-wifi"
+    "on-click": "uwsm-app -- solace-launch-wifi"
   },
   "battery": {
     "format": "{capacity}% {icon}",
@@ -122,11 +122,11 @@
     "format-connected": "󰂱",
     "format-no-controller": "",
     "tooltip-format": "Devices connected: {num_connections}",
-    "on-click": "solace-launch-bluetooth"
+    "on-click": "uwsm-app -- solace-launch-bluetooth"
   },
   "pulseaudio": {
     "format": "{icon}",
-    "on-click": "solace-launch-audio",
+    "on-click": "uwsm-app -- solace-launch-audio",
     "on-click-right": "pamixer -t",
     "tooltip-format": "Playing at {volume}%",
     "scroll-step": 5,

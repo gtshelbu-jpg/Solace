@@ -5,7 +5,32 @@ if [[ -x /usr/bin/xdg-terminal-exec && "$(realpath -m /usr/bin/xdg-terminal-exec
   exec /usr/bin/xdg-terminal-exec "$@"
 fi
 
+terminal_from_desktop_id() {
+  case "$1" in
+    Alacritty.desktop) printf 'alacritty\n' ;;
+    foot.desktop) printf 'foot\n' ;;
+    com.mitchellh.ghostty.desktop) printf 'ghostty\n' ;;
+    kitty.desktop) printf 'kitty\n' ;;
+    *.desktop) sed -n 's/^Exec=\([^ ]*\).*/\1/p' "$HOME/.local/share/applications/$1" /usr/share/applications/"$1" 2>/dev/null | head -n1 ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
 terminal="${TERMINAL:-}"
+if [[ -z "$terminal" || "$terminal" == "xdg-terminal-exec" ]]; then
+  if [[ -f "$HOME/.config/xdg-terminals.list" ]]; then
+    while IFS= read -r desktop_id; do
+      [[ -n "$desktop_id" && "$desktop_id" != \#* ]] || continue
+      candidate="$(terminal_from_desktop_id "$desktop_id")"
+      [[ -n "$candidate" ]] || continue
+      if command -v "$candidate" >/dev/null 2>&1; then
+        terminal="$candidate"
+        break
+      fi
+    done <"$HOME/.config/xdg-terminals.list"
+  fi
+fi
+
 if [[ -z "$terminal" || "$terminal" == "xdg-terminal-exec" ]]; then
   for candidate in alacritty foot kitty ghostty; do
     if command -v "$candidate" >/dev/null 2>&1; then
@@ -98,4 +123,4 @@ case "$(basename "$terminal")" in
     ;;
 esac
 
-exec "$terminal" "${terminal_args[@]}"
+exec env -u NO_COLOR COLORTERM="${COLORTERM:-truecolor}" "$terminal" "${terminal_args[@]}"

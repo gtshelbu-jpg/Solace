@@ -10,5 +10,8 @@ displaylink
 elephant-all-bin
 walker-bin
 hyprmon
+spotify
+parsec-bin
+termius
 visual-studio-code
 zen-browser-bin
