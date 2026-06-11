@@ -10,7 +10,7 @@ This repo is not a full OS installer; it assumes Arch Linux is already installed
 
 ![Solace desktop with Waybar](docs/screenshots/desktop.webp)
 
-![Solace workflow with launcher and terminal tools](docs/screenshots/desktop-workflow.webp)
+![Solace workflow with launcher and terminal tools](docs/screenshots/desktop-workflow.png)
 
 ![Solace first-boot welcome guide](docs/screenshots/welcome-guide.webp)
 
