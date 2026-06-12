@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: CC0-1.0
+---
+componentName: solace
+
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+
+windowExpanding: fullscreen
+windowPlacement: center
+sidebar: widget
+navigation: widget
+
+strings:
+  productName: Solace
+  shortProductName: Solace
+  version: Preview
+  shortVersion: Preview
+  versionedName: Solace Preview
+  shortVersionedName: Solace
+  bootloaderEntryName: Solace
+  productUrl: ""
+  supportUrl: ""
+  knownIssuesUrl: ""
+  releaseNotesUrl: ""
+  donateUrl: ""
+
+images:
+  productIcon: icon.png
+  productLogo: icon.png
+  productWelcome: welcome.webp
+  productWallpaper: wallpaper.jpg
+
+style:
+  SidebarBackground: "#0a1018"
+  SidebarText: "#d8e4f0"
+  SidebarTextCurrent: "#ffffff"
+  SidebarBackgroundCurrent: "#2c8478"
+
+slideshow: show.qml
+slideshowAPI: 2
+
+uploadServer:
+  type: none
+  url: ""
+  sizeLimit: 0
