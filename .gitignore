@@ -1,0 +1,9 @@
+# Archiso sources and build artifacts
+/archiso/upstream/*
+!/archiso/upstream/README.md
+/archiso/out/
+/archiso/work/
+/archiso/*.iso
+/archiso/*.img
+/archiso/*.img.sig
+/archiso/*.iso.sig
