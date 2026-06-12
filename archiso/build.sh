@@ -6,6 +6,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROFILE_DIR="$SCRIPT_DIR/profile"
 WORK_DIR="$SCRIPT_DIR/work"
 OUT_DIR="$SCRIPT_DIR/out"
+LOCAL_REPO_DIR="$SCRIPT_DIR/localrepo"
 
 usage() {
   cat <<EOF
@@ -70,9 +71,39 @@ if [[ "$CLEAN" -eq 1 ]]; then
   mkdir -p "$WORK_DIR"
 fi
 
+BUILD_PROFILE_DIR="$PROFILE_DIR"
+PROFILE_STAGING_DIR=""
+
+if compgen -G "$LOCAL_REPO_DIR/*.pkg.tar.*" >/dev/null; then
+  if [[ ! -f "$LOCAL_REPO_DIR/solace-local.db.tar.gz" && ! -f "$LOCAL_REPO_DIR/solace-local.db" ]]; then
+    echo "ERROR: local packages exist, but the solace-local repo database is missing." >&2
+    echo "Run: repo-add $LOCAL_REPO_DIR/solace-local.db.tar.gz $LOCAL_REPO_DIR/*.pkg.tar.*" >&2
+    exit 1
+  fi
+
+  PROFILE_STAGING_DIR="$(mktemp -d --tmpdir solace-archiso-profile.XXXXXXXX)"
+  cp -a "$PROFILE_DIR/." "$PROFILE_STAGING_DIR/"
+  cat >> "$PROFILE_STAGING_DIR/pacman.conf" <<EOF
+
+[solace-local]
+SigLevel = Optional TrustAll
+Server = file://$LOCAL_REPO_DIR
+EOF
+  BUILD_PROFILE_DIR="$PROFILE_STAGING_DIR"
+fi
+
+cleanup() {
+  [[ -n "$PROFILE_STAGING_DIR" ]] && rm -rf -- "$PROFILE_STAGING_DIR"
+}
+trap cleanup EXIT
+
 echo "Repository: $REPO_ROOT"
 echo "Profile:    $PROFILE_DIR"
+if [[ "$BUILD_PROFILE_DIR" != "$PROFILE_DIR" ]]; then
+  echo "Build copy: $BUILD_PROFILE_DIR"
+  echo "Local repo: $LOCAL_REPO_DIR"
+fi
 echo "Work dir:   $WORK_DIR"
 echo "Output dir: $OUT_DIR"
 
-sudo mkarchiso -v -w "$WORK_DIR" -o "$OUT_DIR" "$PROFILE_DIR"
+sudo mkarchiso -v -w "$WORK_DIR" -o "$OUT_DIR" "$BUILD_PROFILE_DIR"

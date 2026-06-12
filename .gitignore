@@ -3,6 +3,8 @@
 !/archiso/upstream/README.md
 /archiso/out/
 /archiso/work/
+/archiso/localrepo/*
+!/archiso/localrepo/README.md
 /archiso/*.iso
 /archiso/*.img
 /archiso/*.img.sig
