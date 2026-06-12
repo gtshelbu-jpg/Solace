@@ -308,6 +308,19 @@ sanitize_installed_hypr_defaults() {
     "$looknfeel"
 }
 
+remove_storage_shell_helpers() {
+  local drives_fns="$LOCAL_SHARE_HOME/default/bash/fns/drives"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: would remove storage formatting shell helpers from $drives_fns"
+    return 0
+  fi
+
+  [[ -e "$drives_fns" || -L "$drives_fns" ]] || return 0
+  rm -f -- "$drives_fns"
+  log "Removed storage formatting shell helpers from installed defaults"
+}
+
 seed_hypr_toggle_state() {
   local state_dir="$HOME/.local/state/solace/toggles/hypr"
   local state_flags="$state_dir/flags.conf"
@@ -380,6 +393,7 @@ install_snapshot_solace_assets
 install_snapshot_aether_assets
 install_snapshot_fonts
 sanitize_installed_hypr_defaults
+remove_storage_shell_helpers
 seed_hypr_toggle_state
 seed_desktop_background
 seed_aether_theme_bridge

@@ -20,8 +20,7 @@ install_plymouth_theme() {
   if [[ "$DRY_RUN" -eq 1 ]]; then
     log "DRY: would install $PLYMOUTH_SRC -> /usr/share/plymouth/themes/solace"
     log "DRY: would set Plymouth theme to solace"
-    log "DRY: would install /etc/mkinitcpio.conf.d/solace_hooks.conf"
-    log "DRY: would ensure /etc/mkinitcpio.conf includes the plymouth hook"
+    log "DRY: would preserve existing mkinitcpio hooks and add plymouth if possible"
     return 0
   fi
 
@@ -29,11 +28,18 @@ install_plymouth_theme() {
   run_cmd sudo install -d -m 0755 /usr/share/plymouth/themes
   run_cmd sudo cp -a "$PLYMOUTH_SRC" /usr/share/plymouth/themes/solace
   run_cmd sudo plymouth-set-default-theme solace
-  run_cmd sudo install -d -m 0755 /etc/mkinitcpio.conf.d
-  cat <<'EOF' | run_cmd sudo tee /etc/mkinitcpio.conf.d/solace_hooks.conf >/dev/null
-HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)
-EOF
+  remove_stale_solace_hooks_dropin
   ensure_mkinitcpio_plymouth_hook
+}
+
+remove_stale_solace_hooks_dropin() {
+  local stale_dropin="/etc/mkinitcpio.conf.d/solace_hooks.conf"
+
+  [[ -e "$stale_dropin" || -L "$stale_dropin" ]] || return 0
+
+  log "Removing stale Solace mkinitcpio hook override at $stale_dropin"
+  backup_target "$stale_dropin"
+  run_cmd sudo rm -f "$stale_dropin"
 }
 
 ensure_mkinitcpio_plymouth_hook() {
@@ -131,12 +137,11 @@ install_limine_theme() {
 
   log "Installing Solace Limine theme"
   if [[ "$DRY_RUN" -eq 1 ]]; then
-    log "DRY: would prepare Solace Limine assets for ${#limine_configs[@]} config file(s)"
+    log "DRY: would merge Solace Limine visual theme into ${#limine_configs[@]} config file(s)"
     log "DRY: would install Solace UKI splash bitmap"
-    log "DRY: would patch mkinitcpio presets with --splash"
-    log "DRY: would ensure Limine entries include splash kernel args"
-    log "DRY: would rebuild initramfs/UKIs"
-    log "DRY: would merge Solace theme settings after Limine regeneration"
+    if [[ "${SOLACE_BOOT_REGENERATE:-0}" == "1" ]]; then
+      log "DRY: SOLACE_BOOT_REGENERATE=1 would update Limine generator defaults and rebuild boot images"
+    fi
     for limine_config in "${limine_configs[@]}"; do
       log "DRY: Limine config candidate: $limine_config"
     done
@@ -146,9 +151,20 @@ install_limine_theme() {
   local limine_config
   for limine_config in "${limine_configs[@]}"; do
     backup_target "$limine_config"
+    merge_limine_theme "$limine_config"
   done
 
   run_cmd sudo install -Dm644 "$LIMINE_SRC/splash-solace.bmp" /usr/share/systemd/bootctl/splash-solace.bmp
+  ensure_solace_limine_default_splash
+  for limine_config in "${limine_configs[@]}"; do
+    ensure_solace_limine_splash_cmdline "$limine_config"
+  done
+
+  if [[ "${SOLACE_BOOT_REGENERATE:-0}" != "1" ]]; then
+    log "Skipping Limine entry regeneration; set SOLACE_BOOT_REGENERATE=1 to update Solace-generated UKIs/entries."
+    return 0
+  fi
+
   ensure_limine_default_config "${limine_configs[@]}"
 
   local preset
@@ -162,8 +178,28 @@ install_limine_theme() {
   done
 
   for limine_config in "${limine_configs[@]}"; do
-    ensure_limine_splash_cmdline "$limine_config"
+    merge_limine_theme "$limine_config"
+    ensure_solace_limine_splash_cmdline "$limine_config"
   done
+}
+
+ensure_solace_limine_default_splash() {
+  local default_limine="/etc/default/limine"
+
+  [[ -f "$default_limine" ]] || return 0
+  if ! grep -Eq '^TARGET_OS_NAME="?[Ss]olace"?$|^CUSTOM_UKI_NAME="?[Ss]olace"?$' "$default_limine"; then
+    log "Leaving non-Solace Limine generator defaults untouched: $default_limine"
+    return 0
+  fi
+
+  if grep -Eq '^KERNEL_CMDLINE\[default\]\+="[^"]*(^|[[:space:]])quiet([[:space:]]|$)[^"]*(^|[[:space:]])splash([[:space:]]|$)' "$default_limine"; then
+    return 0
+  fi
+
+  log "Ensuring Solace Limine generator defaults include quiet splash"
+  backup_target "$default_limine"
+  printf 'KERNEL_CMDLINE[default]+=" quiet splash loglevel=0 systemd.show_status=false rd.udev.log_level=0 vt.global_cursor_default=0"\n' \
+    | run_cmd sudo tee -a "$default_limine" >/dev/null
 }
 
 extract_limine_base_cmdline() {
@@ -273,6 +309,51 @@ ensure_limine_splash_cmdline() {
   rm -f "$tmp"
 }
 
+ensure_solace_limine_splash_cmdline() {
+  local limine_config="$1"
+  local tmp
+
+  [[ -f "$limine_config" ]] || return 0
+  if ! grep -Eiq '(^[[:space:]]*/[+]?Solace|path:.*solace.*\.efi|comment:[[:space:]]*Solace)' "$limine_config"; then
+    return 0
+  fi
+
+  log "Ensuring quiet splash only on Solace entries in $limine_config"
+  tmp="$(mktemp)"
+  awk '
+    /^[[:space:]]*\/[^/]/ {
+      in_solace = ($0 ~ /^[[:space:]]*\/\+?[Ss]olace([[:space:]]|$)/)
+    }
+    /^[[:space:]]*comment:[[:space:]]*[Ss]olace([[:space:]]|$)/ {
+      in_solace = 1
+    }
+    /^[[:space:]]*path:.*[Ss]olace[^[:space:]]*\.efi/ {
+      in_solace = 1
+    }
+    /^[[:space:]]*cmdline:/ && in_solace {
+      line = $0
+      if (line !~ /(^|[[:space:]])quiet([[:space:]]|$)/) line = line " quiet"
+      if (line !~ /(^|[[:space:]])splash([[:space:]]|$)/) line = line " splash"
+      if (line !~ /(^|[[:space:]])loglevel=/) line = line " loglevel=0"
+      if (line !~ /(^|[[:space:]])systemd\.show_status=/) line = line " systemd.show_status=false"
+      if (line !~ /(^|[[:space:]])rd\.udev\.log_level=/) line = line " rd.udev.log_level=0"
+      if (line !~ /(^|[[:space:]])vt\.global_cursor_default=/) line = line " vt.global_cursor_default=0"
+      print line
+      next
+    }
+    { print }
+  ' "$limine_config" >"$tmp"
+
+  if cmp -s "$tmp" "$limine_config"; then
+    rm -f "$tmp"
+    return 0
+  fi
+
+  backup_target "$limine_config"
+  run_cmd sudo install -m 0644 "$tmp" "$limine_config"
+  rm -f "$tmp"
+}
+
 merge_limine_theme() {
   local limine_config="$1"
   local tmp
@@ -308,6 +389,11 @@ rebuild_boot_images() {
     return 0
   fi
 
+  if [[ "${SOLACE_BOOT_REGENERATE:-0}" != "1" ]]; then
+    log "Skipping boot image rebuild; set SOLACE_BOOT_REGENERATE=1 to rebuild initramfs/UKIs."
+    return 0
+  fi
+
   if command -v limine-mkinitcpio >/dev/null 2>&1; then
     run_cmd sudo limine-mkinitcpio
   else
@@ -325,12 +411,5 @@ rebuild_boot_images() {
 install_plymouth_theme
 install_limine_theme
 rebuild_boot_images
-if [[ "$DRY_RUN" -eq 0 ]]; then
-  mapfile -t limine_configs < <(find_limine_configs | awk '!seen[$0]++')
-  for limine_config in "${limine_configs[@]}"; do
-    merge_limine_theme "$limine_config"
-    ensure_limine_splash_cmdline "$limine_config"
-  done
-fi
 
 log "Boot visuals configured where supported."
