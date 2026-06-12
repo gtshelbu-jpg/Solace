@@ -11,6 +11,7 @@ brltty
 broadcom-wl
 btrfs-progs
 calamares
+cage
 clonezilla
 cloud-init
 cryptsetup
@@ -70,6 +71,7 @@ mkinitcpio-archiso
 mkinitcpio-nfs-utils
 mmc-utils
 modemmanager
+mesa
 mtools
 nano
 nbd
@@ -124,6 +126,7 @@ wireless-regdb
 wireless_tools
 wpa_supplicant
 wvdial
+xcb-util-cursor
 xdg-utils
 xfsprogs
 xl2tpd

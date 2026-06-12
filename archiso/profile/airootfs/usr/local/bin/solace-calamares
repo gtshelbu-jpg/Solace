@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v calamares >/dev/null 2>&1; then
+  echo "calamares is not installed in this live image." >&2
+  exit 1
+fi
+
+if ! command -v cage >/dev/null 2>&1; then
+  echo "cage is not installed in this live image." >&2
+  exit 1
+fi
+
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+mkdir -p "$XDG_RUNTIME_DIR"
+chmod 700 "$XDG_RUNTIME_DIR"
+
+export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-wayland}"
+export WLR_RENDERER_ALLOW_SOFTWARE=1
+
+if command -v dbus-run-session >/dev/null 2>&1; then
+  exec dbus-run-session -- cage -s -- calamares
+fi
+
+exec cage -s -- calamares
