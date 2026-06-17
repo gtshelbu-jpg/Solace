@@ -31,6 +31,22 @@ EOF
   done
 }
 
+link_gtk_css() {
+  local source="$HOME/.config/solace/current/theme/gtk.css"
+  local gtk_dir
+  local target
+  local relative_source
+
+  [[ -f "$source" ]] || return 0
+
+  for gtk_dir in "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"; do
+    mkdir -p "$gtk_dir"
+    target="$gtk_dir/gtk.css"
+    relative_source="$(realpath --relative-to="$gtk_dir" "$source")"
+    ln -sfn "$relative_source" "$target"
+  done
+}
+
 icon_theme_exists() {
   local theme="$1"
 
@@ -84,6 +100,7 @@ else
 fi
 
 set_gsetting icon-theme "$icon_theme"
+link_gtk_css
 set_nautilus_defaults
 
 if command -v systemctl >/dev/null 2>&1; then
