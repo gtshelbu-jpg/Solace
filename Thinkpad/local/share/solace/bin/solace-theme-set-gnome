@@ -7,6 +7,14 @@ set_gsetting() {
   gsettings set org.gnome.desktop.interface "$1" "$2" >/dev/null 2>&1 || true
 }
 
+set_schema_gsetting() {
+  local schema="$1"
+  local key="$2"
+  local value="$3"
+
+  gsettings set "$schema" "$key" "$value" >/dev/null 2>&1 || true
+}
+
 write_gtk_settings() {
   local prefer_dark="$1"
   local gtk_theme="$2"
@@ -23,12 +31,42 @@ EOF
   done
 }
 
+icon_theme_exists() {
+  local theme="$1"
+
+  [[ -d "$HOME/.icons/$theme" ]] ||
+    [[ -d "$HOME/.local/share/icons/$theme" ]] ||
+    [[ -d "/usr/share/icons/$theme" ]]
+}
+
+resolve_icon_theme() {
+  local requested="$1"
+
+  if icon_theme_exists "$requested"; then
+    printf '%s\n' "$requested"
+  elif icon_theme_exists Adwaita; then
+    printf 'Adwaita\n'
+  else
+    printf 'hicolor\n'
+  fi
+}
+
+set_nautilus_defaults() {
+  set_schema_gsetting org.gnome.nautilus.preferences default-folder-viewer "'list-view'"
+  set_schema_gsetting org.gnome.nautilus.preferences default-sort-order "'name'"
+  set_schema_gsetting org.gnome.nautilus.preferences default-sort-in-reverse-order false
+  set_schema_gsetting org.gnome.nautilus.list-view default-zoom-level "'medium'"
+  set_schema_gsetting org.gnome.nautilus.icon-view default-zoom-level "'small'"
+
+  pkill -x nautilus >/dev/null 2>&1 || true
+}
+
 # Change gnome icon theme color
 GNOME_ICONS_THEME=~/.config/solace/current/theme/icons.theme
 if [[ -f $GNOME_ICONS_THEME ]]; then
-  icon_theme="$(<"$GNOME_ICONS_THEME")"
+  icon_theme="$(resolve_icon_theme "$(<"$GNOME_ICONS_THEME")")"
 else
-  icon_theme="Yaru-blue"
+  icon_theme="$(resolve_icon_theme Yaru-blue)"
 fi
 
 if [[ -f ~/.config/solace/current/theme/light.mode ]]; then
@@ -46,6 +84,7 @@ else
 fi
 
 set_gsetting icon-theme "$icon_theme"
+set_nautilus_defaults
 
 if command -v systemctl >/dev/null 2>&1; then
   systemctl --user set-environment "GTK_THEME=$gtk_theme_env" >/dev/null 2>&1 || true

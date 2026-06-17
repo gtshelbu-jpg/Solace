@@ -44,6 +44,7 @@ hyprlock
 hyprsunset
 imagemagick
 imv
+adwaita-icon-theme
 impala
 iwd
 libsecret
@@ -78,6 +79,7 @@ xorg-xwayland
 wl-clipboard
 grim
 slurp
+satty
 mpv
 pamixer
 neovim

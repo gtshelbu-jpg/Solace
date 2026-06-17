@@ -1,0 +1,99 @@
+/* Aether theme for Obsidian */
+
+.theme-dark,
+.theme-light {
+  --background-primary: #00020a;
+  --background-primary-alt: #000208;
+  --background-secondary: #000208;
+  --background-secondary-alt: #000105;
+  --background-modifier-border: #54565a;
+  --text-normal: #ffffff;
+  --text-selection: #3b6aa5;
+  --text-muted: color-mix(in srgb, #ffffff 70%, transparent);
+  --text-faint: color-mix(in srgb, #ffffff 55%, transparent);
+  --text-link: #6298ea;
+  --text-accent: #3b6aa5;
+  --text-accent-hover: #6298ea;
+  --interactive-accent: #3b6aa5;
+  --interactive-accent-hover: #6298ea;
+  --text-title-h1: #9b8d19;
+  --text-title-h2: #66c677;
+  --text-title-h3: #9fd068;
+  --text-title-h4: #6298ea;
+  --text-title-h5: #bca0ec;
+  --text-title-h6: #36ceb8;
+  --code-normal: #36ceb8;
+  --text-error: #9b8d19;
+  --text-error-hover: #9b8d19;
+  --text-success: #66c677;
+  --tag-color: #36ceb8;
+  --tag-background: #1a1b23;
+  --graph-line: #54565a;
+  --graph-node: #3b6aa5;
+  --graph-node-focused: #6298ea;
+  --graph-node-tag: #36ceb8;
+  --graph-node-attachment: #66c677;
+}
+
+.cm-header-1,
+.markdown-rendered h1 {
+  color: var(--text-title-h1);
+}
+
+.cm-header-2,
+.markdown-rendered h2 {
+  color: var(--text-title-h2);
+}
+
+.cm-header-3,
+.markdown-rendered h3 {
+  color: var(--text-title-h3);
+}
+
+.cm-header-4,
+.markdown-rendered h4 {
+  color: var(--text-title-h4);
+}
+
+.cm-header-5,
+.markdown-rendered h5 {
+  color: var(--text-title-h5);
+}
+
+.cm-header-6,
+.markdown-rendered h6 {
+  color: var(--text-title-h6);
+}
+
+.markdown-rendered code {
+  color: #36ceb8;
+}
+
+.cm-s-obsidian span.cm-keyword {
+  color: #9b8d19;
+}
+
+.cm-s-obsidian span.cm-string {
+  color: #66c677;
+}
+
+.cm-s-obsidian span.cm-number {
+  color: #9fd068;
+}
+
+.cm-s-obsidian span.cm-comment {
+  color: #54565a;
+}
+
+.cm-s-obsidian span.cm-operator,
+.cm-s-obsidian span.cm-def,
+.markdown-rendered a,
+.workspace-leaf.mod-active .workspace-leaf-header-title,
+.nav-file-title.is-active,
+.search-result-file-title {
+  color: var(--interactive-accent);
+}
+
+.markdown-rendered blockquote {
+  border-left-color: var(--interactive-accent);
+}

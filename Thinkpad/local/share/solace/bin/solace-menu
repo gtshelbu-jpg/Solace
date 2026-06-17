@@ -204,10 +204,9 @@ show_share_menu() {
 }
 
 show_toggle_menu() {
-  local options="󱄄  Screensaver\n󰔎  Nightlight\n󱫖  Idle Lock\n󰂛  Notifications\n󰍜  Top Bar\n󱂬  Workspace Layout\n  Window Gaps\n  1-Window Ratio\n󰍹  Monitor Scaling\n  Direct Boot\n󰟵  Passwordless Sudo"
+  local options="󰔎  Nightlight\n󱫖  Idle Lock\n󰂛  Notifications\n󰍜  Top Bar\n󱂬  Workspace Layout\n  Window Gaps\n  1-Window Ratio\n󰍹  Monitor Scaling\n  Direct Boot\n󰟵  Passwordless Sudo"
 
   case $(menu "Toggle" "$options") in
-  *Screensaver*) solace-toggle-screensaver ;;
   *Nightlight*) solace-toggle-nightlight ;;
   *Idle*) solace-toggle-idle ;;
   *Notifications*) solace-toggle-notification-silencing ;;
@@ -264,12 +263,11 @@ show_hardware_touchpad_haptics_menu() {
 }
 
 show_style_menu() {
-  case $(menu "Style" "󰸌  Theme\n  Font\n  Background\n  Hyprland\n󱄄  Screensaver\n  About") in
-  *Theme*) show_theme_menu ;;
+  case $(menu "Style" "󰸌  Theme\n  Font\n  Background\n  Hyprland\n  About") in
+  *Theme*) show_theme_menu show_style_menu ;;
   *Font*) show_font_menu ;;
   *Background*) show_background_menu ;;
   *Hyprland*) open_in_editor ~/.config/hypr/looknfeel.conf ;;
-  *Screensaver*) show_screensaver_menu ;;
   *About*) show_about_menu ;;
   *) show_main_menu ;;
   esac
@@ -284,17 +282,20 @@ show_about_menu() {
   esac
 }
 
-show_screensaver_menu() {
-  case $(menu "Screensaver" "  Edit Text\n  Set From Image\n  Restore Default") in
-  *Text*) solace-branding-screensaver text ;;
-  *Image*) solace-branding-screensaver image ;;
-  *Default*) solace-branding-screensaver reset ;;
-  *) show_style_menu ;;
-  esac
-}
-
 show_theme_menu() {
-  solace-launch-walker -m menus:solacethemes --width 800 --minheight 400
+  local parent_menu="${1:-show_main_menu}"
+  local current
+  local selected
+
+  current="$(solace-theme-current 2>/dev/null || true)"
+  selected="$(menu "Theme" "$(solace-theme-list)" "--width 350" "$current")"
+
+  if [[ -z $selected || $selected == "CNCLD" ]]; then
+    back_to "$parent_menu"
+    return
+  fi
+
+  present_terminal "solace-theme-set \"$(echo "$selected" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')\""
 }
 
 show_background_menu() {
@@ -826,13 +827,12 @@ show_about() {
 }
 
 show_system_menu() {
-  local options="󱄄  Screensaver\n  Lock"
+  local options="  Lock"
   ! solace-toggle-enabled suspend-off && options="$options\n󰒲  Suspend"
   solace-hibernation-available && options="$options\n󰤁  Hibernate"
   options="$options\n󰍃  Logout\n󰜉  Restart\n󰐥  Shutdown"
 
   case $(menu "System" "$options") in
-  *Screensaver*) solace-launch-screensaver force ;;
   *Lock*) solace-system-lock ;;
   *Suspend*) systemctl suspend ;;
   *Hibernate*) systemctl hibernate ;;
@@ -844,7 +844,7 @@ show_system_menu() {
 }
 
 show_main_menu() {
-  go_to_menu "$(menu "Go" "󰀻  Apps\n󰧑  Learn\n󱓞  Trigger\n  Setup\n󰉉  Install\n󰭌  Remove\n  Update\n  About\n  System")"
+  go_to_menu "$(menu "Go" "󰀻  Apps\n󰧑  Learn\n󰸌  Theme\n󱓞  Trigger\n  Setup\n󰉉  Install\n󰭌  Remove\n  Update\n  About\n  System")"
 }
 
 go_to_menu() {
@@ -860,7 +860,7 @@ go_to_menu() {
   *background*) show_background_menu ;;
   *capture*) show_capture_menu ;;
   *style*) show_style_menu ;;
-  *theme*) show_theme_menu ;;
+  *theme*) show_theme_menu show_main_menu ;;
   *screenrecord*) show_screenrecord_menu ;;
   *setup*) show_setup_menu ;;
   *power*) show_setup_power_menu ;;

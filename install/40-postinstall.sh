@@ -10,7 +10,7 @@ fi
 
 log "Post-install checks complete."
 if [[ "$DRY_RUN" -eq 1 ]]; then
-  log "DRY: would refresh application entries, Walker/Elephant, GNOME/GTK theme settings, VS Code theme settings, and Chromium flags"
+  log "DRY: would refresh application entries, MIME defaults, Walker/Elephant, current Solace/Aether theme, and Chromium flags"
   log "DRY: log out and back in so Hyprland and user-session services pick up the new config links"
   exit 0
 fi
@@ -27,9 +27,8 @@ run_installed_helper() {
 }
 
 run_installed_helper solace-refresh-applications
+run_installed_helper solace-default-mimetypes
 run_installed_helper solace-refresh-walker
-run_installed_helper solace-theme-set-gnome
-run_installed_helper solace-theme-set-browser
-run_installed_helper solace-theme-set-vscode
+run_installed_helper solace-theme-refresh
 run_installed_helper solace-refresh-chromium
 log "Log out and back in so Hyprland and user-session services pick up the new config links."

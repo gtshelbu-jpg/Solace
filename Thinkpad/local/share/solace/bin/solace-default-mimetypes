@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# solace:summary=Apply Solace default file and URL associations
+# solace:group=default
+# solace:name=mimetypes
+# solace:examples=solace default mimetypes
+
+set -e
+
+solace-refresh-applications >/dev/null 2>&1 || true
+update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
+
+set_default() {
+  local desktop_id="$1"
+  shift
+
+  local mime
+  for mime in "$@"; do
+    xdg-mime default "$desktop_id" "$mime"
+  done
+}
+
+set_default org.gnome.Nautilus.desktop inode/directory
+
+set_default imv.desktop \
+  image/png \
+  image/jpeg \
+  image/jpg \
+  image/gif \
+  image/webp \
+  image/bmp \
+  image/tiff
+
+set_default org.gnome.Evince.desktop application/pdf
+
+set_default mpv.desktop \
+  video/mp4 \
+  video/x-msvideo \
+  video/x-matroska \
+  video/x-flv \
+  video/x-ms-wmv \
+  video/mpeg \
+  video/ogg \
+  video/webm \
+  video/quicktime \
+  video/3gpp \
+  video/3gpp2 \
+  video/x-ms-asf \
+  video/x-ogm+ogg \
+  video/x-theora+ogg \
+  application/ogg
+
+set_default nvim.desktop \
+  text/plain \
+  text/english \
+  text/x-makefile \
+  text/x-c++hdr \
+  text/x-c++src \
+  text/x-chdr \
+  text/x-csrc \
+  text/x-java \
+  text/x-moc \
+  text/x-pascal \
+  text/x-tcl \
+  text/x-tex \
+  application/x-shellscript \
+  text/x-c \
+  text/x-c++ \
+  application/xml \
+  text/xml

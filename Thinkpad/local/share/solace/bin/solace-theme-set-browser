@@ -23,9 +23,20 @@ fi
 
 set_browser_policy() {
   local policy_dir="$1"
+  local policy_file="$policy_dir/color.json"
+  local tmp
 
   [[ -d $policy_dir ]] || return
-  echo "{\"BrowserThemeColor\": \"$THEME_HEX_COLOR\", \"BrowserColorScheme\": \"device\"}" | tee "$policy_dir/color.json" >/dev/null
+  tmp="$(mktemp)"
+  printf '{"BrowserThemeColor": "%s", "BrowserColorScheme": "device"}\n' "$THEME_HEX_COLOR" >"$tmp"
+
+  if [[ -w $policy_dir ]]; then
+    install -m 0644 "$tmp" "$policy_file"
+  else
+    sudo install -m 0644 "$tmp" "$policy_file"
+  fi
+
+  rm -f "$tmp"
 }
 
 set_firefox_policy() {
@@ -62,7 +73,13 @@ set_firefox_policy() {
       }' >"$tmp"
   fi
 
-  mv "$tmp" "$policy_file"
+  if [[ -w $distribution_dir ]]; then
+    install -m 0644 "$tmp" "$policy_file"
+  else
+    sudo install -m 0644 "$tmp" "$policy_file"
+  fi
+
+  rm -f "$tmp"
 }
 
 refresh_running_browser() {

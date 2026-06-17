@@ -45,3 +45,10 @@ command -v solace-restart-btop >/dev/null 2>&1 && solace-restart-btop || true
 command -v solace-restart-mako >/dev/null 2>&1 && solace-restart-mako || true
 command -v solace-restart-helix >/dev/null 2>&1 && solace-restart-helix || true
 
+command -v solace-theme-set-foot >/dev/null 2>&1 && solace-theme-set-foot || true
+command -v solace-theme-set-gnome >/dev/null 2>&1 && solace-theme-set-gnome || true
+command -v solace-theme-set-browser >/dev/null 2>&1 && solace-theme-set-browser || true
+command -v solace-theme-set-vscode >/dev/null 2>&1 && solace-theme-set-vscode || true
+command -v solace-theme-set-obsidian >/dev/null 2>&1 && solace-theme-set-obsidian || true
+command -v solace-theme-set-keyboard >/dev/null 2>&1 && solace-theme-set-keyboard || true
+command -v solace-hook >/dev/null 2>&1 && solace-hook theme-set aether >/dev/null || true

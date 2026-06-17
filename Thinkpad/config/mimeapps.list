@@ -18,6 +18,7 @@ application/xml=nvim.desktop
 text/xml=nvim.desktop
 image/png=imv.desktop
 image/jpeg=imv.desktop
+image/jpg=imv.desktop
 image/gif=imv.desktop
 image/webp=imv.desktop
 image/bmp=imv.desktop

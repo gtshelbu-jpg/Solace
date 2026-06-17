@@ -4,7 +4,7 @@
 # solace:group=transcode
 # solace:name=ascii
 # solace:args=<input-image.svg|png> <output-path> [--width <columns>] [--height <rows>] [--mode <braille|block>] [--threshold <percent>] [--invert]
-# solace:examples=solace transcode ascii ~/logo.svg /tmp/logo.txt | solace transcode ascii ~/logo.png ~/.config/solace/branding/screensaver.txt --width 80
+# solace:examples=solace transcode ascii ~/logo.svg /tmp/logo.txt | solace transcode ascii ~/logo.png ~/.config/solace/branding/about.txt --width 80
 
 set -o pipefail
 

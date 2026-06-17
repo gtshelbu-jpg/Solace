@@ -1,22 +1,21 @@
 #!/bin/bash
 
-# solace:summary=Ensure the Solace and Arch keyring packages are installed and populated
+# solace:summary=Ensure the Arch keyring package is installed and populated
 # solace:requires-sudo=true
 
-if solace-pkg-missing solace-keyring || ! sudo pacman-key --list-keys 40DFB630FF42BCFFB047046CF0134EE680CAC571 &>/dev/null; then
-  sudo pacman-key --recv-keys 40DFB630FF42BCFFB047046CF0134EE680CAC571 --keyserver keys.openpgp.org
-  sudo pacman-key --lsign-key 40DFB630FF42BCFFB047046CF0134EE680CAC571
+set -e
 
-  # This is generally not a good idea, but this is a special case because we're going to be updating
-  # the full set of packages in solace-update-system-pkgs right after this (and it needs latest keyring)!
-  sudo pacman -Sy
-  solace-pkg-add solace-keyring
-
-  sudo pacman-key --list-keys 40DFB630FF42BCFFB047046CF0134EE680CAC571
+if [[ ! -s /etc/pacman.d/gnupg/pubring.gpg ]]; then
+  echo -e "\e[32m\nInitialize pacman signing keyring\e[0m"
+  sudo pacman-key --init
 fi
+
+echo -e "\e[32m\nPopulate Arch signing keys\e[0m"
+sudo pacman-key --populate archlinux
 
 # Ensure we have the latest archlinux-keyring, maintainer keys might have changed
 # Always reinstall, as the keyring can be updated without a package version bump.
 echo -e "\e[32m\nUpdate Arch signing keys\e[0m"
 sudo pacman -Sy --noconfirm archlinux-keyring >/dev/null 2> >(grep -vE '^warning: archlinux-keyring-[^ ]+ is up to date -- reinstalling$' >&2)
+sudo pacman-key --populate archlinux
 echo "Keys are correct"
