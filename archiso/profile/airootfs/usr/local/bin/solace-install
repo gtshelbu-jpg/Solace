@@ -3,6 +3,7 @@ set -euo pipefail
 
 TARGET="/mnt"
 DEFAULT_REPO_URL="${SOLACE_REPO_URL:-}"
+ARCHINSTALL_CONFIG="${SOLACE_ARCHINSTALL_CONFIG:-/usr/share/solace/archinstall/solace-user_configuration.json}"
 DEMO="${SOLACE_INSTALL_DEMO:-0}"
 
 if [[ -z "${TERM:-}" || "${TERM:-}" == "dumb" ]]; then
@@ -142,11 +143,10 @@ show_install_guide() {
   note "2. Flash it to a USB drive with a tool like Fedora Media Writer, Balena Etcher, or dd."
   note "3. Boot the target computer from the USB stick."
   note "4. Connect to the internet. Ethernet should work automatically; Wi-Fi can use iwctl."
-  note "5. Choose an install path:"
-  note "   - Fast path: use archinstall, then let this menu stage Solace into the target."
-  note "   - Manual path: partition/mount yourself at /mnt, then stage or run Solace bootstrap."
-  note "   - Experimental path: try Calamares while it is still being developed."
-  note "6. Reboot, log in, and accept the Solace post-install prompt."
+  note "5. Run solace-install and choose 'Install Arch with Solace defaults'."
+  note "6. Complete archinstall. When it asks what to do next, choose 'Exit archinstall'."
+  note "7. Solace will be staged automatically for first login."
+  note "8. Reboot, remove the USB stick, log in, and accept the Solace post-install prompt."
   printf '\n'
   pause
 }
@@ -268,12 +268,12 @@ run_bootstrap_on_target() {
   demo_notice
   say "Bootstrap a mounted Arch target"
   note "This mode assumes you have already installed or mounted Arch at $TARGET."
-  note "It does not partition disks, format filesystems, or unlock LUKS."
+  note "It does not partition disks, format filesystems, unlock LUKS, or run the desktop bootstrap."
   printf '\n'
   show_storage
 
   if [[ "$DEMO" == "1" ]]; then
-    note "Would validate $TARGET, copy embedded Solace into $TARGET/opt/solace, install a first-login prompt, then optionally run arch-chroot $TARGET /opt/solace/install.sh."
+    note "Would validate $TARGET, copy embedded Solace into $TARGET/opt/solace, and install a first-login prompt."
     printf '\n'
     pause
     return 0
@@ -281,34 +281,49 @@ run_bootstrap_on_target() {
 
   confirm "Continue with target root at $TARGET?" || exit 0
   stage_solace_target
-
-  confirm "Run /opt/solace/install.sh inside $TARGET now?" || exit 0
-  arch-chroot "$TARGET" /opt/solace/install.sh
+  pause
 }
 
 run_archinstall() {
   header
   demo_notice
-  say "Launch archinstall"
-  note "Use this for a fresh Arch install. After rebooting or mounting the target, run Solace bootstrap."
+  say "Install Arch with Solace defaults"
+  note "This launches archinstall with Solace-compatible defaults:"
+  note "  - bootloader: Limine"
+  note "  - audio: PipeWire"
+  note "  - firewall: UFW"
+  note "  - network: copy the ISO network stack (iwd/systemd-networkd)"
+  note "  - Bluetooth: enabled"
+  note ""
+  note "After archinstall completes, Solace will be staged into the installed system."
+  note "When archinstall asks what to do next, choose 'Exit archinstall'."
+  note "The actual Solace desktop bootstrap runs after you reboot and log in."
   printf '\n'
   if [[ "$DEMO" == "1" ]]; then
-    note "Would launch archinstall for base Arch installation."
+    note "Would launch: archinstall --config $ARCHINSTALL_CONFIG"
+    note "Then would stage Solace into $TARGET for first login."
     printf '\n'
     pause
     return 0
   fi
   command -v archinstall >/dev/null 2>&1 || fail "archinstall is not installed."
-  confirm "Start archinstall now?" || exit 0
-  archinstall
+  [[ -f "$ARCHINSTALL_CONFIG" ]] || fail "Missing archinstall config: $ARCHINSTALL_CONFIG"
+  confirm "Start archinstall with Solace defaults now?" || exit 0
+  archinstall --config "$ARCHINSTALL_CONFIG"
 
   printf '\n'
   if mountpoint -q "$TARGET" && [[ -d "$TARGET/etc" ]]; then
-    confirm "Archinstall finished. Stage Solace into $TARGET for first login?" || return 0
     stage_solace_target
+    printf '\n'
+    say "Arch install is complete and Solace is staged for first login."
+    note "Reboot now, remove the install medium, log in, and accept the Solace post-install prompt."
+    printf '\n'
+    if confirm "Reboot now?"; then
+      systemctl reboot
+    fi
   else
     note "Archinstall finished, but $TARGET is not mounted."
-    note "Mount the new system at $TARGET later and choose 'Bootstrap mounted target at /mnt'."
+    note "Before rebooting, mount the new system at $TARGET and choose 'Stage Solace into mounted target'."
     pause
   fi
 }
@@ -333,21 +348,21 @@ main() {
   while true; do
     header
     demo_notice
-    note "Fastest stable path today: install/mount Arch first, then run the Solace bootstrap."
+    note "Official path: install Arch here, reboot, then run Solace bootstrap inside the installed OS."
     printf '\n'
 
     local selection
     selection="$(choose \
       "Install guide" \
-      "Bootstrap mounted target at /mnt" \
-      "Launch archinstall" \
+      "Install Arch with Solace defaults" \
+      "Stage Solace into mounted target" \
       "Launch experimental Calamares" \
       "Open shell")"
 
     case "$selection" in
       "Install guide") show_install_guide ;;
-      "Bootstrap mounted target at /mnt") run_bootstrap_on_target ;;
-      "Launch archinstall") run_archinstall ;;
+      "Install Arch with Solace defaults") run_archinstall ;;
+      "Stage Solace into mounted target") run_bootstrap_on_target ;;
       "Launch experimental Calamares") run_calamares ;;
       "Open shell"|"") exec "${SHELL:-/bin/bash}" ;;
       *) fail "Unknown selection: $selection" ;;
