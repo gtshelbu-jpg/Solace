@@ -143,10 +143,10 @@ show_install_guide() {
   note "3. Boot the target computer from the USB stick."
   note "4. Connect to the internet. Ethernet should work automatically; Wi-Fi can use iwctl."
   note "5. Choose an install path:"
-  note "   - Fast path: use archinstall, then run Solace bootstrap on the mounted target."
-  note "   - Manual path: partition/mount yourself at /mnt, then run Solace bootstrap."
+  note "   - Fast path: use archinstall, then let this menu stage Solace into the target."
+  note "   - Manual path: partition/mount yourself at /mnt, then stage or run Solace bootstrap."
   note "   - Experimental path: try Calamares while it is still being developed."
-  note "6. Reboot into Solace and finish any machine-specific tweaks."
+  note "6. Reboot, log in, and accept the Solace post-install prompt."
   printf '\n'
   pause
 }
@@ -160,6 +160,7 @@ require_target_mount() {
 copy_or_clone_solace() {
   local target_repo="$TARGET/opt/solace"
   local repo_url="$DEFAULT_REPO_URL"
+  local embedded_repo="/opt/solace"
 
   mkdir -p "$TARGET/opt"
 
@@ -168,11 +169,73 @@ copy_or_clone_solace() {
     return 0
   fi
 
+  if [[ -f "$embedded_repo/install.sh" ]]; then
+    note "Copying embedded Solace repo from $embedded_repo to $target_repo"
+    rsync -a --delete "$embedded_repo/" "$target_repo/"
+    return 0
+  fi
+
   repo_url="$(input "Solace git URL: " "${repo_url:-https://example.invalid/your/solace.git}")"
   [[ -n "$repo_url" ]] || fail "A Solace repository URL is required unless $target_repo already exists."
 
   command -v git >/dev/null 2>&1 || fail "git is not installed in the live image."
   git clone "$repo_url" "$target_repo"
+}
+
+install_first_login_prompt() {
+  local postinstall="$TARGET/usr/local/bin/solace-postinstall"
+  local profile_hook="$TARGET/etc/profile.d/solace-first-login.sh"
+
+  mkdir -p "$TARGET/usr/local/bin" "$TARGET/etc/profile.d"
+
+  cat >"$postinstall" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+MARKER="${XDG_STATE_HOME:-$HOME/.local/state}/solace/postinstall.done"
+SOLACE_DIR="/opt/solace"
+
+if [[ "${1:-}" == "--prompt" ]]; then
+  [[ -t 0 ]] || exit 0
+  [[ -f "$MARKER" ]] && exit 0
+  [[ -x "$SOLACE_DIR/install.sh" || -f "$SOLACE_DIR/install.sh" ]] || exit 0
+
+  printf '\nSolace is staged on this system but has not been installed yet.\n'
+  read -r -p "Run Solace desktop bootstrap now? [y/N] " answer
+  case "$answer" in
+    [Yy]|[Yy][Ee][Ss])
+      bash "$SOLACE_DIR/install.sh"
+      mkdir -p "$(dirname "$MARKER")"
+      touch "$MARKER"
+      ;;
+  esac
+  exit 0
+fi
+
+exec bash "$SOLACE_DIR/install.sh" "$@"
+EOF
+
+  cat >"$profile_hook" <<'EOF'
+# Prompt once on interactive shell login if Solace is staged but not installed.
+case $- in
+  *i*) ;;
+  *) return 0 2>/dev/null || exit 0 ;;
+esac
+
+command -v solace-postinstall >/dev/null 2>&1 || return 0 2>/dev/null || exit 0
+solace-postinstall --prompt
+EOF
+
+  chmod 0755 "$postinstall"
+  chmod 0644 "$profile_hook"
+}
+
+stage_solace_target() {
+  require_target_mount
+  copy_or_clone_solace
+  install_first_login_prompt
+  note "Solace staged into $TARGET/opt/solace"
+  note "First-login prompt installed at $TARGET/etc/profile.d/solace-first-login.sh"
 }
 
 run_bootstrap_on_target() {
@@ -185,15 +248,14 @@ run_bootstrap_on_target() {
   show_storage
 
   if [[ "$DEMO" == "1" ]]; then
-    note "Would validate $TARGET, clone Solace into $TARGET/opt/solace, then run arch-chroot $TARGET /opt/solace/install.sh."
+    note "Would validate $TARGET, copy embedded Solace into $TARGET/opt/solace, install a first-login prompt, then optionally run arch-chroot $TARGET /opt/solace/install.sh."
     printf '\n'
     pause
     return 0
   fi
 
   confirm "Continue with target root at $TARGET?" || exit 0
-  require_target_mount
-  copy_or_clone_solace
+  stage_solace_target
 
   confirm "Run /opt/solace/install.sh inside $TARGET now?" || exit 0
   arch-chroot "$TARGET" /opt/solace/install.sh
@@ -214,6 +276,16 @@ run_archinstall() {
   command -v archinstall >/dev/null 2>&1 || fail "archinstall is not installed."
   confirm "Start archinstall now?" || exit 0
   archinstall
+
+  printf '\n'
+  if mountpoint -q "$TARGET" && [[ -d "$TARGET/etc" ]]; then
+    confirm "Archinstall finished. Stage Solace into $TARGET for first login?" || return 0
+    stage_solace_target
+  else
+    note "Archinstall finished, but $TARGET is not mounted."
+    note "Mount the new system at $TARGET later and choose 'Bootstrap mounted target at /mnt'."
+    pause
+  fi
 }
 
 run_calamares() {

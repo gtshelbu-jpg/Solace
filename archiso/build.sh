@@ -60,6 +60,10 @@ if ! command -v mkarchiso >/dev/null 2>&1; then
   echo "ERROR: mkarchiso not found. Install the archiso package first." >&2
   exit 1
 fi
+if ! command -v rsync >/dev/null 2>&1; then
+  echo "ERROR: rsync not found. Install rsync before building the ISO." >&2
+  exit 1
+fi
 
 [[ -d "$PROFILE_DIR" ]] || { echo "ERROR: profile directory not found: $PROFILE_DIR" >&2; exit 1; }
 [[ -f "$PROFILE_DIR/profiledef.sh" ]] || { echo "ERROR: missing profiledef.sh in $PROFILE_DIR" >&2; exit 1; }
@@ -71,8 +75,23 @@ if [[ "$CLEAN" -eq 1 ]]; then
   mkdir -p "$WORK_DIR"
 fi
 
-BUILD_PROFILE_DIR="$PROFILE_DIR"
-PROFILE_STAGING_DIR=""
+BUILD_PROFILE_DIR=""
+PROFILE_STAGING_DIR="$(mktemp -d --tmpdir solace-archiso-profile.XXXXXXXX)"
+cp -a "$PROFILE_DIR/." "$PROFILE_STAGING_DIR/"
+
+SOLACE_IMAGE_ROOT="$PROFILE_STAGING_DIR/airootfs/opt/solace"
+mkdir -p "$(dirname "$SOLACE_IMAGE_ROOT")"
+rsync -a --delete \
+  --exclude '/.git/' \
+  --exclude '/archiso/out/' \
+  --exclude '/archiso/work/' \
+  --exclude '/archiso/upstream/' \
+  --exclude '/archiso/localrepo/' \
+  --exclude '*.iso' \
+  --exclude '*.img' \
+  "$REPO_ROOT/" "$SOLACE_IMAGE_ROOT/"
+
+BUILD_PROFILE_DIR="$PROFILE_STAGING_DIR"
 
 if compgen -G "$LOCAL_REPO_DIR/*.pkg.tar.*" >/dev/null; then
   if [[ ! -f "$LOCAL_REPO_DIR/solace-local.db.tar.gz" && ! -f "$LOCAL_REPO_DIR/solace-local.db" ]]; then
@@ -81,8 +100,6 @@ if compgen -G "$LOCAL_REPO_DIR/*.pkg.tar.*" >/dev/null; then
     exit 1
   fi
 
-  PROFILE_STAGING_DIR="$(mktemp -d --tmpdir solace-archiso-profile.XXXXXXXX)"
-  cp -a "$PROFILE_DIR/." "$PROFILE_STAGING_DIR/"
   cat >> "$PROFILE_STAGING_DIR/pacman.conf" <<EOF
 
 [solace-local]
@@ -99,10 +116,9 @@ trap cleanup EXIT
 
 echo "Repository: $REPO_ROOT"
 echo "Profile:    $PROFILE_DIR"
-if [[ "$BUILD_PROFILE_DIR" != "$PROFILE_DIR" ]]; then
-  echo "Build copy: $BUILD_PROFILE_DIR"
-  echo "Local repo: $LOCAL_REPO_DIR"
-fi
+echo "Build copy: $BUILD_PROFILE_DIR"
+echo "Embedded:  $SOLACE_IMAGE_ROOT"
+[[ -d "$LOCAL_REPO_DIR" ]] && echo "Local repo: $LOCAL_REPO_DIR"
 echo "Work dir:   $WORK_DIR"
 echo "Output dir: $OUT_DIR"
 
