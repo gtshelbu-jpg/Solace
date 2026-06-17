@@ -11,5 +11,7 @@ if [[ ${#scripts[@]} -eq 0 ]]; then
   exit 1
 fi
 
-chmod +x "${scripts[@]}"
+if ! chmod +x "${scripts[@]}" 2>/dev/null; then
+  printf 'WARN: could not update executable bits for install scripts; continuing with bash.\n' >&2
+fi
 exec bash "$ROOT_DIR/install/install.sh" "$@"

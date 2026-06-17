@@ -182,6 +182,30 @@ copy_or_clone_solace() {
   git clone "$repo_url" "$target_repo"
 }
 
+target_login_user() {
+  awk -F: '$3 >= 1000 && $3 < 60000 && $6 ~ /^\/home\// { print $1; exit }' "$TARGET/etc/passwd" 2>/dev/null || true
+}
+
+fix_staged_solace_permissions() {
+  local target_repo="$TARGET/opt/solace"
+  local login_user
+
+  [[ -d "$target_repo" ]] || return 0
+
+  find "$target_repo" -type d -exec chmod 0755 {} + 2>/dev/null || true
+  find "$target_repo" -type f -name '*.sh' -exec chmod 0755 {} + 2>/dev/null || true
+  chmod 0755 "$target_repo/install.sh" 2>/dev/null || true
+
+  login_user="$(target_login_user)"
+  if [[ -n "$login_user" ]]; then
+    note "Giving $login_user ownership of staged Solace files"
+    chroot "$TARGET" chown -R "$login_user:$login_user" /opt/solace
+  else
+    note "Could not detect a regular target user; leaving /opt/solace root-owned."
+    note "The installer wrapper can still run with bash, but AUR setup works best after chowning /opt/solace to your user."
+  fi
+}
+
 install_first_login_prompt() {
   local postinstall="$TARGET/usr/local/bin/solace-postinstall"
   local profile_hook="$TARGET/etc/profile.d/solace-first-login.sh"
@@ -233,6 +257,7 @@ EOF
 stage_solace_target() {
   require_target_mount
   copy_or_clone_solace
+  fix_staged_solace_permissions
   install_first_login_prompt
   note "Solace staged into $TARGET/opt/solace"
   note "First-login prompt installed at $TARGET/etc/profile.d/solace-first-login.sh"
