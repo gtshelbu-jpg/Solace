@@ -67,6 +67,7 @@ foot
 obsidian
 syncthing
 mako
+vortix
 pipewire
 pipewire-pulse
 wireplumber

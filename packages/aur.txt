@@ -16,3 +16,4 @@ termius
 visual-studio-code
 zen-browser-bin
 cliamp
+chkrootkit

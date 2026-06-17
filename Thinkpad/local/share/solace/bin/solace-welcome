@@ -12,6 +12,7 @@ PLAIN=0
 SOLACE_HOME="${SOLACE_PATH:-$HOME/.local/share/solace}"
 DOCS_DIR="${SOLACE_DOCS_DIR:-$SOLACE_HOME/default/docs/welcome}"
 LOGO_PATH="${SOLACE_LOGO_PATH:-}"
+SECURITY_STATUS_FILE="$STATE_DIR/security-checks/chkrootkit.status"
 
 for arg in "$@"; do
   case "$arg" in
@@ -135,6 +136,75 @@ print_header() {
   echo
 }
 
+start_system_checks() {
+  command -v solace-security-chkrootkit >/dev/null 2>&1 || return 0
+  solace-security-chkrootkit start >/dev/null 2>&1 || true
+}
+
+read_chkrootkit_status() {
+  local state="pending"
+  local message="Preparing chkrootkit scan"
+  local updated_at=""
+  local log=""
+
+  if [[ -f "$SECURITY_STATUS_FILE" ]]; then
+    # shellcheck disable=SC1090
+    source "$SECURITY_STATUS_FILE" 2>/dev/null || true
+  fi
+
+  printf '%s\t%s\t%s\t%s\n' "${state:-pending}" "${message:-Preparing chkrootkit scan}" "${updated_at:-}" "${log:-}"
+}
+
+print_system_checks() {
+  local accent foreground muted background status state message updated_at log icon color
+  accent="$(theme_color accent "#7b5daf")"
+  foreground="$(theme_color foreground "#ffffff")"
+  muted="$(theme_color muted "#9bb8ff")"
+  background="$(theme_color background "#00020a")"
+
+  status="$(read_chkrootkit_status)"
+  IFS=$'\t' read -r state message updated_at log <<<"$status"
+
+  case "$state" in
+    pass)
+      icon="✓"
+      color="#9ece6a"
+      ;;
+    warning)
+      icon="!"
+      color="#e0af68"
+      ;;
+    failed)
+      icon="x"
+      color="#f7768e"
+      ;;
+    running|installing|queued)
+      icon="…"
+      color="$accent"
+      ;;
+    *)
+      icon="·"
+      color="$muted"
+      ;;
+  esac
+
+  gum style \
+    --foreground "$foreground" \
+    --background "$background" \
+    --border-foreground "$color" \
+    --border rounded \
+    --padding "1 2" \
+    --margin "0 1 1 1" \
+    "System checks" \
+    "" \
+    "$icon chkrootkit: $message"
+
+  if [[ "$state" == "warning" || "$state" == "failed" ]]; then
+    gum style --foreground "$muted" "Run \`solace-security-chkrootkit log\` for details."
+    echo
+  fi
+}
+
 doc_path_for_label() {
   case "$1" in
     *Start*) printf '%s/start-here.md\n' "$DOCS_DIR" ;;
@@ -171,6 +241,7 @@ show_gum() {
   while true; do
     clear 2>/dev/null || true
     print_header
+    print_system_checks
 
     gum format <<'EOF'
 ## Quick keys
@@ -189,10 +260,13 @@ EOF
 }
 
 if [[ "${SOLACE_WELCOME_IN_TERMINAL:-0}" != "1" && "$DISPLAY_ONLY" -eq 0 ]]; then
+  start_system_checks
   launch_terminal
 fi
 
 [[ "$FORCE" -eq 1 ]] || touch "$DONE_MARKER"
+
+start_system_checks
 
 clear 2>/dev/null || true
 if [[ "$PLAIN" -eq 0 ]] && command -v gum >/dev/null 2>&1; then
