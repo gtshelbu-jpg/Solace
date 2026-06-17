@@ -1,0 +1,261 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TARGET="/mnt"
+DEFAULT_REPO_URL="${SOLACE_REPO_URL:-}"
+DEMO="${SOLACE_INSTALL_DEMO:-0}"
+
+if [[ -z "${TERM:-}" || "${TERM:-}" == "dumb" ]]; then
+  export TERM="xterm-256color"
+fi
+
+if [[ "${1:-}" == "--demo" ]]; then
+  DEMO=1
+  shift
+fi
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  cat <<'EOF'
+Usage: solace-install [--demo]
+
+Launches the Solace installer menu.
+
+Options:
+  --demo    Run without making system changes or launching external installers.
+EOF
+  exit 0
+fi
+
+has_gum() {
+  command -v gum >/dev/null 2>&1
+}
+
+say() {
+  if has_gum; then
+    gum style --foreground 81 --bold "$*"
+  else
+    printf '%s\n' "$*"
+  fi
+}
+
+note() {
+  if has_gum; then
+    gum style --foreground 245 "$*"
+  else
+    printf '%s\n' "$*"
+  fi
+}
+
+fail() {
+  if has_gum; then
+    gum style --foreground 196 --bold "ERROR: $*" >&2
+  else
+    printf 'ERROR: %s\n' "$*" >&2
+  fi
+  exit 1
+}
+
+confirm() {
+  local prompt="$1"
+  if has_gum; then
+    gum confirm "$prompt"
+  else
+    read -r -p "$prompt [y/N] " answer
+    [[ "$answer" =~ ^[Yy]([Ee][Ss])?$ ]]
+  fi
+}
+
+choose() {
+  if has_gum; then
+    gum choose "$@"
+  else
+    local i=1 choice
+    local choices=("$@")
+    for choice in "$@"; do
+      printf '%d) %s\n' "$i" "$choice"
+      i=$((i + 1))
+    done
+    read -r -p "Choose: " choice
+    [[ "$choice" =~ ^[0-9]+$ ]] || return 1
+    [[ "$choice" -ge 1 && "$choice" -le "${#choices[@]}" ]] || return 1
+    printf '%s\n' "${choices[$((choice - 1))]}"
+  fi
+}
+
+input() {
+  local prompt="$1"
+  local placeholder="${2:-}"
+  if has_gum; then
+    gum input --prompt "$prompt" --placeholder "$placeholder"
+  else
+    read -r -p "$prompt" value
+    printf '%s\n' "$value"
+  fi
+}
+
+header() {
+  clear
+  if has_gum; then
+    gum style \
+      --border rounded \
+      --border-foreground 81 \
+      --padding "1 3" \
+      --margin "1 0" \
+      --foreground 255 \
+      --background 17 \
+      --bold \
+      "Solace Installer"
+  else
+    printf '== Solace Installer ==\n'
+  fi
+}
+
+show_storage() {
+  note "Detected block devices:"
+  lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS
+  printf '\n'
+}
+
+pause() {
+  if has_gum; then
+    gum input --placeholder "Press Enter to continue" >/dev/null
+  else
+    read -r -p "Press Enter to continue"
+  fi
+}
+
+demo_notice() {
+  [[ "$DEMO" == "1" ]] || return 0
+  if has_gum; then
+    gum style --foreground 229 --background 94 --padding "0 1" "DEMO MODE: no install actions will run."
+  else
+    printf 'DEMO MODE: no install actions will run.\n'
+  fi
+  printf '\n'
+}
+
+show_install_guide() {
+  header
+  say "Install guide"
+  printf '\n'
+  note "1. Download the newest Solace ISO from the latest release."
+  note "2. Flash it to a USB drive with a tool like Fedora Media Writer, Balena Etcher, or dd."
+  note "3. Boot the target computer from the USB stick."
+  note "4. Connect to the internet. Ethernet should work automatically; Wi-Fi can use iwctl."
+  note "5. Choose an install path:"
+  note "   - Fast path: use archinstall, then run Solace bootstrap on the mounted target."
+  note "   - Manual path: partition/mount yourself at /mnt, then run Solace bootstrap."
+  note "   - Experimental path: try Calamares while it is still being developed."
+  note "6. Reboot into Solace and finish any machine-specific tweaks."
+  printf '\n'
+  pause
+}
+
+require_target_mount() {
+  mountpoint -q "$TARGET" || fail "$TARGET is not mounted."
+  [[ -d "$TARGET/etc" ]] || fail "$TARGET does not look like an installed Linux root. Missing $TARGET/etc."
+  [[ -d "$TARGET/boot" || -d "$TARGET/efi" ]] || note "No obvious boot mount found under $TARGET. Continuing anyway."
+}
+
+copy_or_clone_solace() {
+  local target_repo="$TARGET/opt/solace"
+  local repo_url="$DEFAULT_REPO_URL"
+
+  mkdir -p "$TARGET/opt"
+
+  if [[ -d "$target_repo/.git" || -f "$target_repo/install.sh" ]]; then
+    note "Using existing Solace checkout at $target_repo"
+    return 0
+  fi
+
+  repo_url="$(input "Solace git URL: " "${repo_url:-https://example.invalid/your/solace.git}")"
+  [[ -n "$repo_url" ]] || fail "A Solace repository URL is required unless $target_repo already exists."
+
+  command -v git >/dev/null 2>&1 || fail "git is not installed in the live image."
+  git clone "$repo_url" "$target_repo"
+}
+
+run_bootstrap_on_target() {
+  header
+  demo_notice
+  say "Bootstrap a mounted Arch target"
+  note "This mode assumes you have already installed or mounted Arch at $TARGET."
+  note "It does not partition disks, format filesystems, or unlock LUKS."
+  printf '\n'
+  show_storage
+
+  if [[ "$DEMO" == "1" ]]; then
+    note "Would validate $TARGET, clone Solace into $TARGET/opt/solace, then run arch-chroot $TARGET /opt/solace/install.sh."
+    printf '\n'
+    pause
+    return 0
+  fi
+
+  confirm "Continue with target root at $TARGET?" || exit 0
+  require_target_mount
+  copy_or_clone_solace
+
+  confirm "Run /opt/solace/install.sh inside $TARGET now?" || exit 0
+  arch-chroot "$TARGET" /opt/solace/install.sh
+}
+
+run_archinstall() {
+  header
+  demo_notice
+  say "Launch archinstall"
+  note "Use this for a fresh Arch install. After rebooting or mounting the target, run Solace bootstrap."
+  printf '\n'
+  if [[ "$DEMO" == "1" ]]; then
+    note "Would launch archinstall for base Arch installation."
+    printf '\n'
+    pause
+    return 0
+  fi
+  command -v archinstall >/dev/null 2>&1 || fail "archinstall is not installed."
+  confirm "Start archinstall now?" || exit 0
+  archinstall
+}
+
+run_calamares() {
+  header
+  demo_notice
+  say "Launch experimental Calamares"
+  note "This path is still under active development."
+  printf '\n'
+  if [[ "$DEMO" == "1" ]]; then
+    note "Would launch solace-calamares."
+    printf '\n'
+    pause
+    return 0
+  fi
+  confirm "Start Calamares now?" || exit 0
+  solace-calamares
+}
+
+main() {
+  while true; do
+    header
+    demo_notice
+    note "Fastest stable path today: install/mount Arch first, then run the Solace bootstrap."
+    printf '\n'
+
+    local selection
+    selection="$(choose \
+      "Install guide" \
+      "Bootstrap mounted target at /mnt" \
+      "Launch archinstall" \
+      "Launch experimental Calamares" \
+      "Open shell")"
+
+    case "$selection" in
+      "Install guide") show_install_guide ;;
+      "Bootstrap mounted target at /mnt") run_bootstrap_on_target ;;
+      "Launch archinstall") run_archinstall ;;
+      "Launch experimental Calamares") run_calamares ;;
+      "Open shell"|"") exec "${SHELL:-/bin/bash}" ;;
+      *) fail "Unknown selection: $selection" ;;
+    esac
+  done
+}
+
+main "$@"
