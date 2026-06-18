@@ -91,5 +91,4 @@ Backups of overwritten files are stored under `~/.config-backups/solace-TIMESTAM
 Notes:
 - The installer now uses a root wrapper `./install.sh` which ensures the inner `install/` scripts are executable before running.
 - Boot visuals are configured only after the base Arch install is already bootable; the installer does not partition disks or install a bootloader from scratch.
-- The `Thinkpad/` snapshot is the source-of-truth capture for the desired desktop experience, but hardware-specific, pacman/mirror, bootloader, and machine recovery pieces must be filtered before they are installed automatically.
 - This project borrows ideas from other popular Hyprland environments; it is not tied to any single distribution overlay.
