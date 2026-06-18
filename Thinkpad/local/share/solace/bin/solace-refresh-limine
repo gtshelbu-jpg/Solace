@@ -105,11 +105,22 @@ ensure_limine_splash_cmdline() {
   local tmp
 
   [[ -f "$limine_config" ]] || return 0
-  grep -Eq '^[[:space:]]*cmdline:' "$limine_config" || return 0
+  if ! grep -Eiq '(^[[:space:]]*/[+]?([Ss]olace|Arch Linux)([[:space:]]|$)|path:.*solace.*\.efi|comment:[[:space:]]*([Ss]olace|Arch Linux)([[:space:]]|$))' "$limine_config"; then
+    return 0
+  fi
 
   tmp="$(mktemp)"
   awk '
-    /^[[:space:]]*cmdline:/ {
+    /^[[:space:]]*\/[^/]/ {
+      in_target = ($0 ~ /^[[:space:]]*\/\+?([Ss]olace|Arch Linux)([[:space:]]|$)/)
+    }
+    /^[[:space:]]*comment:[[:space:]]*([Ss]olace|Arch Linux)([[:space:]]|$)/ {
+      in_target = 1
+    }
+    /^[[:space:]]*path:.*[Ss]olace[^[:space:]]*\.efi/ {
+      in_target = 1
+    }
+    /^[[:space:]]*cmdline:/ && in_target {
       line = $0
       if (line !~ /(^|[[:space:]])quiet([[:space:]]|$)/) line = line " quiet"
       if (line !~ /(^|[[:space:]])splash([[:space:]]|$)/) line = line " splash"

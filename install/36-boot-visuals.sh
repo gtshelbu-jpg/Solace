@@ -374,17 +374,17 @@ ensure_solace_limine_splash_cmdline() {
   local tmp
 
   [[ -f "$limine_config" ]] || return 0
-  if ! grep -Eiq '(^[[:space:]]*/[+]?Solace|path:.*solace.*\.efi|comment:[[:space:]]*Solace)' "$limine_config"; then
+  if ! grep -Eiq '(^[[:space:]]*/[+]?([Ss]olace|Arch Linux)([[:space:]]|$)|path:.*solace.*\.efi|comment:[[:space:]]*([Ss]olace|Arch Linux)([[:space:]]|$))' "$limine_config"; then
     return 0
   fi
 
-  log "Ensuring quiet splash only on Solace entries in $limine_config"
+  log "Ensuring quiet splash on Solace/Arch Linux entries in $limine_config"
   tmp="$(mktemp)"
   awk '
     /^[[:space:]]*\/[^/]/ {
-      in_solace = ($0 ~ /^[[:space:]]*\/\+?[Ss]olace([[:space:]]|$)/)
+      in_solace = ($0 ~ /^[[:space:]]*\/\+?([Ss]olace|Arch Linux)([[:space:]]|$)/)
     }
-    /^[[:space:]]*comment:[[:space:]]*[Ss]olace([[:space:]]|$)/ {
+    /^[[:space:]]*comment:[[:space:]]*([Ss]olace|Arch Linux)([[:space:]]|$)/ {
       in_solace = 1
     }
     /^[[:space:]]*path:.*[Ss]olace[^[:space:]]*\.efi/ {

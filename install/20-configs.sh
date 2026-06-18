@@ -266,6 +266,8 @@ install_snapshot_bins() {
     [[ -e "$src" || -L "$src" ]] || continue
     link_src="$LOCAL_SHARE_HOME/bin/$(basename "$src")"
     case "$(basename "$src")" in
+      solace-refresh-limine|solace-refresh-plymouth)
+        ;;
       *pacman*|*limine*|*direct-boot*|*drive*|*hibernation*|*plymouth*|*snapshot*)
         if [[ "$DRY_RUN" -eq 1 ]]; then
           log "DRY: would remove boot/storage helper from installed bin: $link_src"
