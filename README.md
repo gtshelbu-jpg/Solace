@@ -8,6 +8,8 @@ This repo is not a full OS installer; it assumes Arch Linux is already installed
 
 ## Screenshots
 
+![Solace desktop on a fresh install](docs/screenshots/solace-desktop-2026-06.png)
+
 ![Solace desktop with Waybar](docs/screenshots/desktop.webp)
 
 ![Solace workflow with launcher and terminal tools](docs/screenshots/desktop-workflow.png)
