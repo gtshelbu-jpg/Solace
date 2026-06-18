@@ -16,13 +16,6 @@ For ISO testing and alpha release installs, read the [Solace Alpha Install Guide
 
 ![Solace first-boot welcome guide](docs/screenshots/welcome-guide.webp)
 
-## Goals
-
-- Use upstream Arch repositories only: `core`, `extra`, and optionally `multilib`
-- Avoid depending on third-party mirrors or overlay repos
-- Keep machine-specific configuration separated from general configuration
-- Make setup scripts safe, readable, and repeatable
-
 ## Repository Layout
 
 ```text
