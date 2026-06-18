@@ -12,6 +12,8 @@ For ISO testing and alpha release installs, read the [Solace Alpha Install Guide
 
 ![Solace desktop with Waybar](docs/screenshots/desktop.webp)
 
+![Solace desktop example theming](docs/screenshots/2560x1440-gruvbox.png)
+
 ![Solace workflow with launcher and terminal tools](docs/screenshots/desktop-workflow.png)
 
 ![Solace first-boot welcome guide](docs/screenshots/welcome-guide.webp)
