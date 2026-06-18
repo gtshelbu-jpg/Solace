@@ -6,6 +6,8 @@ The project recreates the parts of a preferred Hyprland workflow without tying t
 
 This repo is not a full OS installer; it assumes Arch Linux is already installed and bootable, then applies packages, configs, services, themes, and workflow preferences for a Hyprland desktop.
 
+For ISO testing and alpha release installs, read the [Solace Alpha Install Guide](docs/ALPHA_INSTALL.md).
+
 ## Screenshots
 
 ![Solace desktop on a fresh install](docs/screenshots/solace-desktop-2026-06.png)
