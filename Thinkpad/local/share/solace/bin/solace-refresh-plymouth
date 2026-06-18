@@ -4,11 +4,37 @@ set -euo pipefail
 # solace:summary=Overwrite the user config for the Plymouth drive decryption and boot sequence with the Solace default and rebuild it.
 # solace:requires-sudo=true
 
+BOOT_IMAGES_NEED_REBUILD=0
+SOLACE_PATH="${SOLACE_PATH:-$HOME/.local/share/solace}"
+
 ensure_mkinitcpio_plymouth_hook() {
   local mkinitcpio_conf="/etc/mkinitcpio.conf"
+  local conf
+  local found_hooks=0
+
+  if [[ -f "$mkinitcpio_conf" ]]; then
+    found_hooks=1
+    ensure_plymouth_hook_in_file "$mkinitcpio_conf"
+  fi
+
+  shopt -s nullglob
+  for conf in /etc/mkinitcpio.conf.d/*.conf; do
+    if grep -Eq '^[[:space:]]*HOOKS=\([^)]*\)' "$conf"; then
+      found_hooks=1
+      ensure_plymouth_hook_in_file "$conf"
+    fi
+  done
+  shopt -u nullglob
+
+  if [[ "$found_hooks" -eq 0 ]]; then
+    echo "WARN: no mkinitcpio HOOKS array found; cannot enable Plymouth hook automatically" >&2
+  fi
+}
+
+ensure_plymouth_hook_in_file() {
+  local mkinitcpio_conf="$1"
   local tmp
 
-  [[ -f "$mkinitcpio_conf" ]] || return 0
   if awk '
     /^[[:space:]]*HOOKS=\([^)]*\)/ {
       hooks = $0
@@ -57,19 +83,67 @@ ensure_mkinitcpio_plymouth_hook() {
     { print }
   ' "$mkinitcpio_conf" >"$tmp"
   sudo install -m 0644 "$tmp" "$mkinitcpio_conf"
+  BOOT_IMAGES_NEED_REBUILD=1
   rm -f "$tmp"
 }
 
-sudo cp -r ~/.local/share/solace/default/plymouth/* /usr/share/plymouth/themes/solace/
+ensure_mkinitcpio_preset_splash() {
+  local preset
+  local tmp
+
+  [[ -f "$SOLACE_PATH/default/limine/splash-solace.bmp" ]] || return 0
+
+  sudo install -Dm644 "$SOLACE_PATH/default/limine/splash-solace.bmp" /usr/share/systemd/bootctl/splash-solace.bmp
+
+  shopt -s nullglob
+  for preset in /etc/mkinitcpio.d/*.preset; do
+    [[ -f "$preset" ]] || continue
+
+    tmp="$(mktemp)"
+    if grep -q '^default_options=' "$preset"; then
+      sed 's|^default_options=.*|default_options="--splash /usr/share/systemd/bootctl/splash-solace.bmp"|' "$preset" >"$tmp"
+    elif grep -q '^default_uki=' "$preset"; then
+      awk '
+        {
+          print
+          if (!inserted && $0 ~ /^default_uki=/) {
+            print "default_options=\"--splash /usr/share/systemd/bootctl/splash-solace.bmp\""
+            inserted = 1
+          }
+        }
+      ' "$preset" >"$tmp"
+    else
+      rm -f "$tmp"
+      continue
+    fi
+
+    if ! cmp -s "$tmp" "$preset"; then
+      sudo cp "$preset" "$preset.bak"
+      sudo install -m 0644 "$tmp" "$preset"
+      BOOT_IMAGES_NEED_REBUILD=1
+    fi
+    rm -f "$tmp"
+  done
+  shopt -u nullglob
+}
+
+sudo rm -rf /usr/share/plymouth/themes/solace
+sudo install -d -m 0755 /usr/share/plymouth/themes
+sudo cp -a "$SOLACE_PATH/default/plymouth" /usr/share/plymouth/themes/solace
 sudo plymouth-set-default-theme solace
-sudo install -d -m 0755 /etc/mkinitcpio.conf.d
-sudo tee /etc/mkinitcpio.conf.d/solace_hooks.conf <<'EOF' >/dev/null
-HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)
-EOF
+BOOT_IMAGES_NEED_REBUILD=1
+ensure_mkinitcpio_preset_splash
+if [[ -f /etc/mkinitcpio.conf.d/solace_hooks.conf ]]; then
+  sudo cp /etc/mkinitcpio.conf.d/solace_hooks.conf /etc/mkinitcpio.conf.d/solace_hooks.conf.bak
+  sudo rm -f /etc/mkinitcpio.conf.d/solace_hooks.conf
+  BOOT_IMAGES_NEED_REBUILD=1
+fi
 ensure_mkinitcpio_plymouth_hook
 
-if command -v limine-mkinitcpio &>/dev/null; then
-  sudo limine-mkinitcpio
-else
-  sudo mkinitcpio -P
+if [[ "$BOOT_IMAGES_NEED_REBUILD" -eq 1 ]]; then
+  if command -v limine-mkinitcpio &>/dev/null; then
+    sudo limine-mkinitcpio
+  else
+    sudo mkinitcpio -P
+  fi
 fi

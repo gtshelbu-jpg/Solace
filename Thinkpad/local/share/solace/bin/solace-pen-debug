@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# solace:summary=Show pen, touch, and tablet input diagnostics
+# solace:group=debug
+# solace:name=pen
+# solace:examples=solace debug pen
+
+set -euo pipefail
+
+section() {
+  printf '\n\033[1;36m%s\033[0m\n' "$1"
+}
+
+section "Hyprland tablet and touch devices"
+if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  hyprctl devices -j | jq '
+    {
+      tablets: [.tablets[]? | {name, type, active, output}],
+      touch: [.touch[]? | {name, output}]
+    }
+  '
+else
+  echo "hyprctl or jq is unavailable."
+fi
+
+section "libinput devices"
+if command -v libinput >/dev/null 2>&1; then
+  libinput list-devices 2>/dev/null | awk '
+    /^Device:|^Kernel:|^Group:|^Capabilities:|^Tablet/ { print }
+  '
+else
+  echo "libinput is unavailable. Install tablet support packages first."
+fi
+
+section "Wayland event test"
+if command -v wev >/dev/null 2>&1; then
+  echo "Run this, draw in the test window, and look for tablet/stylus or pointer pressure events:"
+  echo "  wev"
+else
+  echo "wev is unavailable. Install tablet support packages first."
+fi
+
+section "Raw event test"
+if command -v evtest >/dev/null 2>&1; then
+  echo "Run this and pick the Surface pen/touch device:"
+  echo "  sudo evtest"
+  echo "Useful signs: BTN_TOOL_PEN, BTN_TOOL_RUBBER, ABS_PRESSURE, ABS_TILT_X/Y."
+else
+  echo "evtest is unavailable. Install tablet support packages first."
+fi
+
+section "Interpretation"
+cat <<'EOF'
+Good:
+  - Hyprland lists a tablet device separately from touch.
+  - evtest shows BTN_TOOL_PEN and ABS_PRESSURE while drawing.
+  - flip-to-erase shows BTN_TOOL_RUBBER or a distinct eraser tool.
+  - wev reports pen/stylus events, not only generic mouse events.
+
+Limited:
+  - If only touch appears, apps can distinguish fingers but not a pressure pen.
+  - If pressure is absent, Excalidraw cannot invent pressure sensitivity.
+  - If eraser is absent, flip-to-erase needs app-specific shortcuts or a driver/kernel fix.
+
+For Obsidian Excalidraw, the best case is browser Pointer Events with pointerType=pen
+and pressure > 0. Xournal++ is useful as a control test because it reports Linux
+tablet/stylus behavior more directly than Electron apps.
+EOF

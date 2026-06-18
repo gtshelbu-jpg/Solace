@@ -12,6 +12,7 @@ REPO_ROOT="$SCRIPT_DIR/.."
 PLYMOUTH_SRC="$REPO_ROOT/Thinkpad/local/share/solace/default/plymouth"
 LIMINE_SRC="$REPO_ROOT/Thinkpad/local/share/solace/default/limine"
 LIMINE_SPLASH_ARGS="quiet splash loglevel=0 systemd.show_status=false rd.udev.log_level=0 vt.global_cursor_default=0"
+BOOT_IMAGES_NEED_REBUILD=0
 
 install_plymouth_theme() {
   [[ -d "$PLYMOUTH_SRC" ]] || { warn "Missing Plymouth theme source: $PLYMOUTH_SRC"; return 0; }
@@ -21,6 +22,7 @@ install_plymouth_theme() {
     log "DRY: would install $PLYMOUTH_SRC -> /usr/share/plymouth/themes/solace"
     log "DRY: would set Plymouth theme to solace"
     log "DRY: would preserve existing mkinitcpio hooks and add plymouth if possible"
+    log "DRY: would rebuild initramfs/UKIs if Plymouth boot state changed"
     return 0
   fi
 
@@ -28,6 +30,7 @@ install_plymouth_theme() {
   run_cmd sudo install -d -m 0755 /usr/share/plymouth/themes
   run_cmd sudo cp -a "$PLYMOUTH_SRC" /usr/share/plymouth/themes/solace
   run_cmd sudo plymouth-set-default-theme solace
+  BOOT_IMAGES_NEED_REBUILD=1
   remove_stale_solace_hooks_dropin
   ensure_mkinitcpio_plymouth_hook
 }
@@ -44,9 +47,34 @@ remove_stale_solace_hooks_dropin() {
 
 ensure_mkinitcpio_plymouth_hook() {
   local mkinitcpio_conf="/etc/mkinitcpio.conf"
+  local conf
+  local found_hooks=0
+
+  if [[ -f "$mkinitcpio_conf" ]]; then
+    found_hooks=1
+    ensure_plymouth_hook_in_file "$mkinitcpio_conf"
+  else
+    warn "Missing $mkinitcpio_conf; checking mkinitcpio drop-ins for Plymouth hook"
+  fi
+
+  shopt -s nullglob
+  for conf in /etc/mkinitcpio.conf.d/*.conf; do
+    if grep -Eq '^[[:space:]]*HOOKS=\([^)]*\)' "$conf"; then
+      found_hooks=1
+      ensure_plymouth_hook_in_file "$conf"
+    fi
+  done
+  shopt -u nullglob
+
+  if [[ "$found_hooks" -eq 0 ]]; then
+    warn "No mkinitcpio HOOKS array found; cannot enable Plymouth hook automatically"
+  fi
+}
+
+ensure_plymouth_hook_in_file() {
+  local mkinitcpio_conf="$1"
   local tmp
 
-  [[ -f "$mkinitcpio_conf" ]] || { warn "Missing $mkinitcpio_conf; cannot enable Plymouth hook"; return 0; }
   if awk '
     /^[[:space:]]*HOOKS=\([^)]*\)/ {
       hooks = $0
@@ -102,7 +130,10 @@ ensure_mkinitcpio_plymouth_hook() {
     { print }
   ' "$mkinitcpio_conf" >"$tmp"
 
-  run_cmd sudo install -m 0644 "$tmp" "$mkinitcpio_conf"
+  if ! cmp -s "$tmp" "$mkinitcpio_conf"; then
+    run_cmd sudo install -m 0644 "$tmp" "$mkinitcpio_conf"
+    BOOT_IMAGES_NEED_REBUILD=1
+  fi
   rm -f "$tmp"
 }
 
@@ -155,6 +186,7 @@ install_limine_theme() {
   done
 
   run_cmd sudo install -Dm644 "$LIMINE_SRC/splash-solace.bmp" /usr/share/systemd/bootctl/splash-solace.bmp
+  ensure_mkinitcpio_preset_splash
   ensure_solace_limine_default_splash
   for limine_config in "${limine_configs[@]}"; do
     ensure_solace_limine_splash_cmdline "$limine_config"
@@ -166,16 +198,6 @@ install_limine_theme() {
   fi
 
   ensure_limine_default_config "${limine_configs[@]}"
-
-  local preset
-  for preset in /etc/mkinitcpio.d/*.preset; do
-    [[ -f "$preset" ]] || continue
-    if grep -q '^default_options=' "$preset"; then
-      run_cmd sudo sed -i 's|^default_options=.*|default_options="--splash /usr/share/systemd/bootctl/splash-solace.bmp"|' "$preset"
-    else
-      run_cmd sudo sed -i '/^default_uki=/a default_options="--splash /usr/share/systemd/bootctl/splash-solace.bmp"' "$preset"
-    fi
-  done
 
   for limine_config in "${limine_configs[@]}"; do
     merge_limine_theme "$limine_config"
@@ -200,6 +222,44 @@ ensure_solace_limine_default_splash() {
   backup_target "$default_limine"
   printf 'KERNEL_CMDLINE[default]+=" quiet splash loglevel=0 systemd.show_status=false rd.udev.log_level=0 vt.global_cursor_default=0"\n' \
     | run_cmd sudo tee -a "$default_limine" >/dev/null
+  BOOT_IMAGES_NEED_REBUILD=1
+}
+
+ensure_mkinitcpio_preset_splash() {
+  local preset
+  local tmp
+
+  shopt -s nullglob
+  for preset in /etc/mkinitcpio.d/*.preset; do
+    [[ -f "$preset" ]] || continue
+
+    tmp="$(mktemp)"
+    if grep -q '^default_options=' "$preset"; then
+      sed 's|^default_options=.*|default_options="--splash /usr/share/systemd/bootctl/splash-solace.bmp"|' "$preset" >"$tmp"
+    elif grep -q '^default_uki=' "$preset"; then
+      awk '
+        {
+          print
+          if (!inserted && $0 ~ /^default_uki=/) {
+            print "default_options=\"--splash /usr/share/systemd/bootctl/splash-solace.bmp\""
+            inserted = 1
+          }
+        }
+      ' "$preset" >"$tmp"
+    else
+      rm -f "$tmp"
+      continue
+    fi
+
+    if ! cmp -s "$tmp" "$preset"; then
+      log "Ensuring Solace UKI splash bitmap in $preset"
+      backup_target "$preset"
+      run_cmd sudo install -m 0644 "$tmp" "$preset"
+      BOOT_IMAGES_NEED_REBUILD=1
+    fi
+    rm -f "$tmp"
+  done
+  shopt -u nullglob
 }
 
 extract_limine_base_cmdline() {
@@ -390,8 +450,13 @@ rebuild_boot_images() {
   fi
 
   if [[ "${SOLACE_BOOT_REGENERATE:-0}" != "1" ]]; then
-    log "Skipping boot image rebuild; set SOLACE_BOOT_REGENERATE=1 to rebuild initramfs/UKIs."
-    return 0
+    if [[ "$BOOT_IMAGES_NEED_REBUILD" -eq 0 ]]; then
+      log "Skipping boot image rebuild; Plymouth boot state already appears current."
+      return 0
+    fi
+    log "Rebuilding initramfs/UKIs so Plymouth can start at boot."
+  else
+    log "Rebuilding initramfs/UKIs and refreshing Limine-generated entries."
   fi
 
   if command -v limine-mkinitcpio >/dev/null 2>&1; then
@@ -400,11 +465,13 @@ rebuild_boot_images() {
     run_cmd sudo mkinitcpio -P
   fi
 
-  if command -v limine-update >/dev/null 2>&1; then
-    run_cmd sudo limine-update
-  fi
-  if command -v limine-snapper-sync >/dev/null 2>&1; then
-    run_cmd sudo limine-snapper-sync
+  if [[ "${SOLACE_BOOT_REGENERATE:-0}" == "1" ]]; then
+    if command -v limine-update >/dev/null 2>&1; then
+      run_cmd sudo limine-update
+    fi
+    if command -v limine-snapper-sync >/dev/null 2>&1; then
+      run_cmd sudo limine-snapper-sync
+    fi
   fi
 }
 

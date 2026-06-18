@@ -1,2 +1,6 @@
 # Optional drawing tablet support packages from official Arch repositories.
+evtest
+libinput
 libwacom
+wev
+xournalpp
