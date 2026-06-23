@@ -1,7 +1,7 @@
 {
-    "name": "theme-aether",
-    "displayName": "Aether Theme",
-    "description": "Aether color theme generated from wallpaper",
+    "name": "theme-solace",
+    "displayName": "Solace Theme",
+    "description": "Solace color theme",
     "publisher": "local",
     "version": "1.0.0",
     "engines": {
@@ -11,9 +11,9 @@
     "contributes": {
         "themes": [
             {
-                "label": "Aether",
+                "label": "Solace",
                 "uiTheme": "vs-dark",
-                "path": "./themes/aether-color-theme.json"
+                "path": "./themes/solace-color-theme.json"
             }
         ]
     }
