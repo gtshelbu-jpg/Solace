@@ -9,6 +9,7 @@
   "modules-center": ["clock", "custom/weather", "custom/update", "custom/voxtype", "custom/screenrecording-indicator", "custom/idle-indicator", "custom/notification-silencing-indicator"],
   "modules-right": [
     "group/tray-expander",
+    "custom/vortix",
     "custom/displaylink",
     "bluetooth",
     "network",
@@ -81,6 +82,14 @@
     "interval": 5,
     "tooltip": true,
     "on-click": "uwsm-app -- xdg-terminal-exec --app-id=org.solace.hyprmon -e hyprmon"
+  },
+  "custom/vortix": {
+    "exec": "sh -c '${SOLACE_PATH:-$HOME/.local/share/solace}/default/waybar/indicators/vortix.sh'",
+    "return-type": "json",
+    "interval": 5,
+    "tooltip": true,
+    "on-click": "uwsm-app -- xdg-terminal-exec --app-id=org.solace.vortix -e sudo vortix",
+    "on-click-right": "notify-send -u low \"$(sh -c '${SOLACE_PATH:-$HOME/.local/share/solace}/default/waybar/indicators/vortix.sh --tooltip')\""
   },
   "network": {
     "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],

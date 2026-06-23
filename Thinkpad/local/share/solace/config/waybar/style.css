@@ -52,6 +52,23 @@ window#waybar {
   margin-right: 17px;
 }
 
+#custom-vortix {
+  min-width: 12px;
+  margin-right: 14px;
+}
+
+#custom-vortix.connected {
+  color: #8ec07c;
+}
+
+#custom-vortix.warning {
+  color: #d79921;
+}
+
+#custom-vortix.disconnected {
+  opacity: 0.55;
+}
+
 #network {
   margin-right: 13px;
 }
