@@ -239,7 +239,19 @@ Installed destination:
 
 - `~/.config/systemd/user`
 
-Services enabled by [install/30-services.sh](install/30-services.sh):
+System services enabled by [install/30-services.sh](install/30-services.sh):
+
+- `iwd.service`
+- `systemd-networkd.service`
+- `systemd-resolved.service`
+
+Conflicting network managers disabled when present:
+
+- `NetworkManager.service`
+- `wpa_supplicant.service`
+- `dhcpcd.service`
+
+User services enabled by [install/30-services.sh](install/30-services.sh):
 
 - `elephant.service`
 - `solace-recover-internal-monitor.service`

@@ -8,7 +8,16 @@ if [[ ${1:-} == "--dry-run" ]]; then
   DRY_RUN=1
 fi
 
-SYSTEM_SERVICES=("NetworkManager.service")
+SYSTEM_SERVICES=(
+  "iwd.service"
+  "systemd-networkd.service"
+  "systemd-resolved.service"
+)
+DISABLED_SYSTEM_SERVICES=(
+  "NetworkManager.service"
+  "wpa_supplicant.service"
+  "dhcpcd.service"
+)
 USER_SERVICES=(
   "elephant.service"
   "solace-recover-internal-monitor.service"
@@ -17,6 +26,16 @@ USER_SERVICES=(
 USER_SERVICES_NOW=(
   "hypridle.service"
 )
+
+for service_name in "${DISABLED_SYSTEM_SERVICES[@]}"; do
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "DRY: sudo systemctl disable --now $service_name"
+  elif systemctl list-unit-files "$service_name" --no-legend 2>/dev/null | grep -q .; then
+    run_cmd sudo systemctl disable --now "$service_name" || warn "Could not disable conflicting network service: $service_name"
+  else
+    log "Skipping absent conflicting network service: $service_name"
+  fi
+done
 
 for service_name in "${SYSTEM_SERVICES[@]}"; do
   if [[ "$DRY_RUN" -eq 1 ]]; then

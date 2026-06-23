@@ -3,7 +3,7 @@
 # base
 # linux
 # linux-firmware
-# networkmanager
+# iwd
 # xorg-server
 # hyprland
 # waybar
@@ -18,7 +18,6 @@
 # Add packages below this line
 base-devel
 dkms
-networkmanager
 linux-headers
 linux-firmware
 git
