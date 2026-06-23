@@ -24,7 +24,6 @@ write_gtk_settings() {
   for settings in "$HOME/.config/gtk-3.0/settings.ini" "$HOME/.config/gtk-4.0/settings.ini"; do
     cat >"$settings" <<EOF
 [Settings]
-gtk-application-prefer-dark-theme=$prefer_dark
 gtk-theme-name=$gtk_theme
 gtk-icon-theme-name=$icon_theme
 EOF
@@ -86,17 +85,13 @@ else
 fi
 
 if [[ -f ~/.config/solace/current/theme/light.mode ]]; then
-  gtk_theme_env="Adwaita"
   set_gsetting color-scheme "prefer-light"
   set_gsetting gtk-theme "Adwaita"
-  set_gsetting gtk-application-prefer-dark-theme false
   write_gtk_settings false "Adwaita" "$icon_theme"
 else
-  gtk_theme_env="Adwaita:dark"
   set_gsetting color-scheme "prefer-dark"
-  set_gsetting gtk-theme "Adwaita-dark"
-  set_gsetting gtk-application-prefer-dark-theme true
-  write_gtk_settings true "Adwaita-dark" "$icon_theme"
+  set_gsetting gtk-theme "Adwaita"
+  write_gtk_settings true "Adwaita" "$icon_theme"
 fi
 
 set_gsetting icon-theme "$icon_theme"
@@ -104,13 +99,9 @@ link_gtk_css
 set_nautilus_defaults
 
 if command -v systemctl >/dev/null 2>&1; then
-  systemctl --user set-environment "GTK_THEME=$gtk_theme_env" >/dev/null 2>&1 || true
+  systemctl --user unset-environment GTK_THEME >/dev/null 2>&1 || true
 fi
 
 if command -v dbus-update-activation-environment >/dev/null 2>&1; then
-  GTK_THEME="$gtk_theme_env" dbus-update-activation-environment --systemd GTK_THEME >/dev/null 2>&1 || true
-fi
-
-if command -v hyprctl >/dev/null 2>&1; then
-  hyprctl setenv GTK_THEME "$gtk_theme_env" >/dev/null 2>&1 || true
+  env -u GTK_THEME dbus-update-activation-environment --systemd GTK_THEME >/dev/null 2>&1 || true
 fi

@@ -1,28 +1,28 @@
 /**
- * Aether Theme with Sharp Corners (Hyprland-inspired)
+ * Solace Theme with Sharp Corners (Hyprland-inspired)
  * GTK4 / libadwaita + GTK3 legacy
  */
 
-/* Dynamic color palette from Aether */
-@define-color background #00020a;
-@define-color foreground #ffffff;
+/* Dynamic color palette from Solace colors.toml */
+@define-color background {{ background }};
+@define-color foreground {{ foreground }};
 
-@define-color black #00020a;
-@define-color red #74661a;
-@define-color green #458d59;
-@define-color yellow #749951;
-@define-color blue #3b6aa5;
-@define-color magenta #7b5daf;
-@define-color cyan #2c8478;
-@define-color white #ffffff;
-@define-color bright_black #54565a;
-@define-color bright_red #9b8d19;
-@define-color bright_green #66c677;
-@define-color bright_yellow #9fd068;
-@define-color bright_blue #6298ea;
-@define-color bright_magenta #bca0ec;
-@define-color bright_cyan #36ceb8;
-@define-color bright_white #ffffff;
+@define-color black {{ color0 }};
+@define-color red {{ color1 }};
+@define-color green {{ color2 }};
+@define-color yellow {{ color3 }};
+@define-color blue {{ color4 }};
+@define-color magenta {{ color5 }};
+@define-color cyan {{ color6 }};
+@define-color white {{ color7 }};
+@define-color bright_black {{ color8 }};
+@define-color bright_red {{ color9 }};
+@define-color bright_green {{ color10 }};
+@define-color bright_yellow {{ color11 }};
+@define-color bright_blue {{ color12 }};
+@define-color bright_magenta {{ color13 }};
+@define-color bright_cyan {{ color14 }};
+@define-color bright_white {{ color15 }};
 
 /* Adwaita color overrides (libadwaita / GTK4) */
 @define-color accent_bg_color @blue;
@@ -108,7 +108,7 @@
 /* GTK4/libadwaita surface variables and widgets.
  * Newer GNOME apps such as Nautilus do not reliably repaint every surface from
  * @define-color values alone, so keep explicit CSS variables and broad surface
- * selectors in sync with the Aether palette.
+ * selectors in sync with the active Solace palette.
  */
 :root {
     --accent-bg-color: @accent_bg_color;
@@ -392,3 +392,115 @@ toast button.circular.flat.image-button:hover {
     border-radius: 0;
 }
 
+/* Nautilus / libadwaita hard overrides.
+ * Some controls keep Adwaita's widget-level backgrounds unless we override the
+ * actual button/header/popover nodes with higher specificity and background
+ * shorthand.
+ */
+window.nautilus-window headerbar,
+window.nautilus-window windowhandle,
+window.nautilus-window toolbarview,
+window.nautilus-window .titlebar {
+    background: @background;
+    color: @foreground;
+    border-color: transparent;
+    box-shadow: inset 0 -1px alpha(@foreground, 0.06);
+}
+
+window.nautilus-window headerbar button,
+window.nautilus-window headerbar button.flat,
+window.nautilus-window headerbar button.image-button,
+window.nautilus-window headerbar menubutton > button,
+window.nautilus-window headerbar togglebutton,
+window.nautilus-window windowhandle button,
+window.nautilus-window windowhandle button.flat,
+window.nautilus-window windowhandle button.image-button,
+window.nautilus-window windowhandle menubutton > button,
+window.nautilus-window button.path-bar,
+window.nautilus-window pathbar button,
+window.nautilus-window .path-bar button,
+window.nautilus-window .linked button {
+    background: alpha(@foreground, 0.035);
+    color: @foreground;
+    border: 1px solid transparent;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+window.nautilus-window headerbar button:hover,
+window.nautilus-window headerbar button.flat:hover,
+window.nautilus-window headerbar button.image-button:hover,
+window.nautilus-window headerbar menubutton > button:hover,
+window.nautilus-window windowhandle button:hover,
+window.nautilus-window windowhandle button.flat:hover,
+window.nautilus-window windowhandle button.image-button:hover,
+window.nautilus-window windowhandle menubutton > button:hover,
+window.nautilus-window button.path-bar:hover,
+window.nautilus-window pathbar button:hover,
+window.nautilus-window .path-bar button:hover,
+window.nautilus-window .linked button:hover {
+    background: alpha(@foreground, 0.08);
+    color: @foreground;
+}
+
+window.nautilus-window headerbar button:checked,
+window.nautilus-window headerbar togglebutton:checked,
+window.nautilus-window headerbar menubutton > button:checked,
+window.nautilus-window windowhandle button:checked,
+window.nautilus-window windowhandle menubutton > button:checked {
+    background: alpha(@blue, 0.55);
+    color: @foreground;
+}
+
+window.nautilus-window columnview,
+window.nautilus-window columnview.view,
+window.nautilus-window columnview > header,
+window.nautilus-window columnview header,
+window.nautilus-window columnviewheader,
+window.nautilus-window columnviewcolumn,
+window.nautilus-window .column-header,
+window.nautilus-window .column-header button {
+    background: @background;
+    color: @foreground;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+window.nautilus-window columnview > header > button,
+window.nautilus-window columnview header button,
+window.nautilus-window columnviewheader button,
+window.nautilus-window columnviewcolumn button,
+window.nautilus-window .column-header button {
+    background: alpha(@foreground, 0.035);
+    color: @foreground;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+
+window.nautilus-window columnview > header > button:hover,
+window.nautilus-window columnview header button:hover,
+window.nautilus-window columnviewheader button:hover,
+window.nautilus-window columnviewcolumn button:hover,
+window.nautilus-window .column-header button:hover {
+    background: alpha(@foreground, 0.08);
+}
+
+window.nautilus-window popover,
+window.nautilus-window popover contents,
+window.nautilus-window popover.background,
+window.nautilus-window popover.menu,
+window.nautilus-window popover.menu contents,
+window.nautilus-window modelbutton,
+window.nautilus-window popover row {
+    background: @background;
+    color: @foreground;
+    border-color: alpha(@foreground, 0.06);
+    box-shadow: 0 8px 24px alpha(@background, 0.45);
+}
+
+window.nautilus-window popover modelbutton:hover,
+window.nautilus-window popover row:hover,
+window.nautilus-window modelbutton:hover {
+    background: alpha(@foreground, 0.08);
+    color: @foreground;
+}

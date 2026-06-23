@@ -44,7 +44,7 @@
 @define-color headerbar_fg_color @foreground;
 @define-color headerbar_backdrop_color @background;
 @define-color headerbar_shade_color @background;
-@define-color headerbar_border_color alpha(@foreground, 0.15);
+@define-color headerbar_border_color alpha(@foreground, 0.06);
 
 @define-color card_bg_color alpha(@foreground, 0.03);
 @define-color card_fg_color @foreground;
@@ -72,8 +72,8 @@
 @define-color error_fg_color @background;
 
 @define-color shade_color alpha(@foreground, 0.07);
-@define-color scrollbar_outline_color alpha(@foreground, 0.15);
-@define-color borders alpha(@foreground, 0.15);
+@define-color scrollbar_outline_color alpha(@foreground, 0.06);
+@define-color borders alpha(@foreground, 0.06);
 
 /* GTK3 / Adwaita legacy color variables */
 @define-color theme_fg_color @foreground;
@@ -92,7 +92,7 @@
 @define-color theme_unfocused_selected_bg_color @blue;
 @define-color theme_unfocused_selected_fg_color @background;
 @define-color unfocused_insensitive_color @bright_black;
-@define-color unfocused_borders alpha(@foreground, 0.15);
+@define-color unfocused_borders alpha(@foreground, 0.06);
 @define-color warning_color @yellow;
 @define-color error_color @red;
 @define-color success_color @green;
@@ -104,6 +104,197 @@
 /* Content view colors */
 @define-color content_view_bg @background;
 @define-color text_view_bg @background;
+
+/* GTK4/libadwaita surface variables and widgets.
+ * Newer GNOME apps such as Nautilus do not reliably repaint every surface from
+ * @define-color values alone, so keep explicit CSS variables and broad surface
+ * selectors in sync with the Aether palette.
+ */
+:root {
+    --accent-bg-color: @accent_bg_color;
+    --accent-fg-color: @accent_fg_color;
+    --accent-color: @accent_color;
+    --window-bg-color: @window_bg_color;
+    --window-fg-color: @window_fg_color;
+    --view-bg-color: @view_bg_color;
+    --view-fg-color: @view_fg_color;
+    --sidebar-bg-color: @sidebar_bg_color;
+    --sidebar-fg-color: @sidebar_fg_color;
+    --headerbar-bg-color: @headerbar_bg_color;
+    --headerbar-fg-color: @headerbar_fg_color;
+    --popover-bg-color: @popover_bg_color;
+    --popover-fg-color: @popover_fg_color;
+    --dialog-bg-color: @dialog_bg_color;
+    --dialog-fg-color: @dialog_fg_color;
+    --card-bg-color: @card_bg_color;
+    --card-fg-color: @card_fg_color;
+    --border-color: @borders;
+    --shade-color: alpha(@foreground, 0.04);
+    --window-outline-color: transparent;
+}
+
+window,
+window.background,
+applicationwindow,
+.background {
+    background-color: @window_bg_color;
+    color: @window_fg_color;
+}
+
+headerbar,
+toolbar,
+toolbarview,
+windowhandle {
+    background-color: @headerbar_bg_color;
+    color: @headerbar_fg_color;
+    border-color: transparent;
+    box-shadow: inset 0 -1px alpha(@foreground, 0.06);
+}
+
+headerbar button,
+headerbar menubutton,
+headerbar menubutton > button,
+headerbar togglebutton,
+windowhandle button,
+windowhandle menubutton,
+windowhandle menubutton > button,
+toolbar button,
+toolbar menubutton > button {
+    background-color: alpha(@foreground, 0.05);
+    color: @foreground;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+
+headerbar button:hover,
+headerbar menubutton:hover,
+headerbar menubutton > button:hover,
+headerbar togglebutton:hover,
+windowhandle button:hover,
+windowhandle menubutton:hover,
+windowhandle menubutton > button:hover,
+toolbar button:hover,
+toolbar menubutton > button:hover {
+    background-color: alpha(@foreground, 0.10);
+}
+
+headerbar button:checked,
+headerbar menubutton > button:checked,
+headerbar togglebutton:checked,
+windowhandle button:checked,
+windowhandle menubutton > button:checked {
+    background-color: alpha(@blue, 0.45);
+    color: @foreground;
+}
+
+view,
+gridview,
+listview,
+columnview,
+treeview,
+textview,
+textview text,
+.view,
+.content,
+.nautilus-window {
+    background-color: @view_bg_color;
+    color: @view_fg_color;
+}
+
+navigation-sidebar,
+placessidebar,
+sidebar,
+.sidebar {
+    background-color: @sidebar_bg_color;
+    color: @sidebar_fg_color;
+}
+
+row,
+list,
+list > row,
+columnview row,
+gridview child {
+    background-color: transparent;
+    color: @foreground;
+}
+
+row:hover,
+list > row:hover,
+columnview row:hover,
+gridview child:hover {
+    background-color: alpha(@foreground, 0.07);
+}
+
+row:selected,
+list > row:selected,
+columnview row:selected,
+gridview child:selected {
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color;
+}
+
+button,
+menubutton,
+togglebutton {
+    color: @foreground;
+}
+
+columnview header,
+columnviewheader,
+columnviewcolumn,
+columnview .column-header,
+treeview header,
+treeview header button {
+    background-color: alpha(@foreground, 0.05);
+    color: @foreground;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+columnview header button,
+columnviewheader button,
+columnviewcolumn button,
+treeview header button {
+    background-color: transparent;
+    color: @foreground;
+    border: none;
+    box-shadow: none;
+}
+
+columnview header button:hover,
+columnviewheader button:hover,
+columnviewcolumn button:hover,
+treeview header button:hover {
+    background-color: alpha(@foreground, 0.08);
+}
+
+popover,
+popover contents,
+popover.background,
+popover.menu,
+popover.menu contents,
+menu,
+menuitem,
+modelbutton,
+.menu,
+.context-menu {
+    background-color: @popover_bg_color;
+    color: @popover_fg_color;
+    border-color: alpha(@foreground, 0.06);
+    box-shadow: 0 8px 24px alpha(@background, 0.45);
+}
+
+popover modelbutton:hover,
+popover row:hover,
+menuitem:hover,
+modelbutton:hover {
+    background-color: alpha(@foreground, 0.08);
+    color: @foreground;
+}
+
+separator {
+    background-color: alpha(@foreground, 0.06);
+}
 
 /* Text-selection highlight (entries, labels, text views) */
 selection {
@@ -135,6 +326,7 @@ entry > text > placeholder {
 /* GtkMessageDialog */
 messagedialog {
     background-color: @dialog_bg_color;
+    border-color: alpha(@foreground, 0.06);
 }
 
 messagedialog label {
@@ -151,7 +343,7 @@ messagedialog .secondary-text {
 messagedialog button {
     background-color: @background;
     color: @foreground;
-    border: 1px solid @borders;
+    border: 1px solid transparent;
 }
 
 messagedialog button:hover {
@@ -187,7 +379,7 @@ filechooserbutton:drop(active) {
 toast {
     background-color: @background;
     color: @foreground;
-    border: 1px solid @borders;
+    border: 1px solid alpha(@foreground, 0.06);
 }
 
 toast button.circular.flat.image-button:hover {
@@ -199,3 +391,4 @@ toast button.circular.flat.image-button:hover {
 * {
     border-radius: 0;
 }
+

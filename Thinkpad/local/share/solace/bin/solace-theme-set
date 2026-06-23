@@ -38,6 +38,10 @@ if [[ ! -f $NEXT_THEME_PATH/colors.toml && -f $NEXT_THEME_PATH/alacritty.toml ]]
   solace-theme-colors-from-alacritty "$NEXT_THEME_PATH"
 fi
 
+# GTK/libadwaita CSS is generated from colors.toml so all named themes get the
+# same Nautilus styling and never inherit stale bundled CSS from another path.
+rm -f "$NEXT_THEME_PATH/gtk.css"
+
 # Generate dynamic configs
 solace-theme-set-templates
 
@@ -68,10 +72,14 @@ solace-restart-helix
 # Change app-specific themes
 solace-theme-set-foot
 solace-theme-set-gnome
-solace-theme-set-browser
+if sudo -n true >/dev/null 2>&1; then
+  solace-theme-set-browser
+fi
 solace-theme-set-vscode
 solace-theme-set-obsidian
-solace-theme-set-keyboard
+if sudo -n true >/dev/null 2>&1; then
+  solace-theme-set-keyboard
+fi
 
 # Call hook on theme set
 solace-hook theme-set "$THEME_NAME" >/dev/null

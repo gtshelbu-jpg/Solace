@@ -16,6 +16,220 @@ if [[ ! -d "$AETHER_THEME_DIR" ]]; then
   exit 1
 fi
 
+patch_gtk_css() {
+  local gtk_css="$AETHER_THEME_DIR/gtk.css"
+  local tmp
+
+  [[ -f "$gtk_css" ]] || return 0
+
+  tmp="$(mktemp)"
+  awk '
+    legacy && /^\/\* BEGIN SOLACE NAUTILUS LIBADWAITA OVERRIDES \*\// { legacy = 0 }
+    /^\/\* BEGIN SOLACE NAUTILUS LIBADWAITA OVERRIDES \*\// { skip = 1; next }
+    /^\/\* END SOLACE NAUTILUS LIBADWAITA OVERRIDES \*\// { skip = 0; next }
+    /^\/\* Nautilus \/ libadwaita hard overrides\./ { legacy = 1; next }
+    legacy { next }
+    !skip { print }
+  ' "$gtk_css" >"$tmp"
+  mv "$tmp" "$gtk_css"
+
+  cat >>"$gtk_css" <<'EOF'
+
+/* BEGIN SOLACE NAUTILUS LIBADWAITA OVERRIDES */
+/* GTK4/libadwaita surface variables and Nautilus controls. This block is
+ * appended by solace-aether-sync after Aether regenerates gtk.css, so it follows
+ * the active Aether palette instead of freezing one theme's colors.
+ */
+:root {
+    --accent-bg-color: @accent_bg_color;
+    --accent-fg-color: @accent_fg_color;
+    --accent-color: @accent_color;
+    --window-bg-color: @window_bg_color;
+    --window-fg-color: @window_fg_color;
+    --view-bg-color: @view_bg_color;
+    --view-fg-color: @view_fg_color;
+    --sidebar-bg-color: @sidebar_bg_color;
+    --sidebar-fg-color: @sidebar_fg_color;
+    --headerbar-bg-color: @headerbar_bg_color;
+    --headerbar-fg-color: @headerbar_fg_color;
+    --popover-bg-color: @popover_bg_color;
+    --popover-fg-color: @popover_fg_color;
+    --dialog-bg-color: @dialog_bg_color;
+    --dialog-fg-color: @dialog_fg_color;
+    --card-bg-color: @card_bg_color;
+    --card-fg-color: @card_fg_color;
+    --border-color: alpha(@foreground, 0.06);
+    --shade-color: alpha(@foreground, 0.04);
+    --window-outline-color: transparent;
+}
+
+window,
+window.background,
+applicationwindow,
+.background,
+view,
+gridview,
+listview,
+columnview,
+treeview,
+textview,
+textview text,
+.view,
+.content,
+.nautilus-window {
+    background: @background;
+    color: @foreground;
+}
+
+navigation-sidebar,
+placessidebar,
+sidebar,
+.sidebar {
+    background: @background;
+    color: @foreground;
+}
+
+row,
+list,
+list > row,
+columnview row,
+gridview child {
+    background: transparent;
+    color: @foreground;
+}
+
+row:hover,
+list > row:hover,
+columnview row:hover,
+gridview child:hover {
+    background: alpha(@foreground, 0.07);
+}
+
+row:selected,
+list > row:selected,
+columnview row:selected,
+gridview child:selected {
+    background: @theme_selected_bg_color;
+    color: @theme_selected_fg_color;
+}
+
+separator {
+    background: alpha(@foreground, 0.06);
+}
+
+window.nautilus-window headerbar,
+window.nautilus-window windowhandle,
+window.nautilus-window toolbarview,
+window.nautilus-window .titlebar {
+    background: @background;
+    color: @foreground;
+    border-color: transparent;
+    box-shadow: inset 0 -1px alpha(@foreground, 0.06);
+}
+
+window.nautilus-window headerbar button,
+window.nautilus-window headerbar button.flat,
+window.nautilus-window headerbar button.image-button,
+window.nautilus-window headerbar menubutton > button,
+window.nautilus-window headerbar togglebutton,
+window.nautilus-window windowhandle button,
+window.nautilus-window windowhandle button.flat,
+window.nautilus-window windowhandle button.image-button,
+window.nautilus-window windowhandle menubutton > button,
+window.nautilus-window button.path-bar,
+window.nautilus-window pathbar button,
+window.nautilus-window .path-bar button,
+window.nautilus-window .linked button {
+    background: alpha(@foreground, 0.035);
+    color: @foreground;
+    border: 1px solid transparent;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+window.nautilus-window headerbar button:hover,
+window.nautilus-window headerbar button.flat:hover,
+window.nautilus-window headerbar button.image-button:hover,
+window.nautilus-window headerbar menubutton > button:hover,
+window.nautilus-window windowhandle button:hover,
+window.nautilus-window windowhandle button.flat:hover,
+window.nautilus-window windowhandle button.image-button:hover,
+window.nautilus-window windowhandle menubutton > button:hover,
+window.nautilus-window button.path-bar:hover,
+window.nautilus-window pathbar button:hover,
+window.nautilus-window .path-bar button:hover,
+window.nautilus-window .linked button:hover {
+    background: alpha(@foreground, 0.08);
+    color: @foreground;
+}
+
+window.nautilus-window headerbar button:checked,
+window.nautilus-window headerbar togglebutton:checked,
+window.nautilus-window headerbar menubutton > button:checked,
+window.nautilus-window windowhandle button:checked,
+window.nautilus-window windowhandle menubutton > button:checked {
+    background: alpha(@blue, 0.55);
+    color: @foreground;
+}
+
+window.nautilus-window columnview,
+window.nautilus-window columnview.view,
+window.nautilus-window columnview > header,
+window.nautilus-window columnview header,
+window.nautilus-window columnviewheader,
+window.nautilus-window columnviewcolumn,
+window.nautilus-window .column-header,
+window.nautilus-window .column-header button {
+    background: @background;
+    color: @foreground;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+window.nautilus-window columnview > header > button,
+window.nautilus-window columnview header button,
+window.nautilus-window columnviewheader button,
+window.nautilus-window columnviewcolumn button,
+window.nautilus-window .column-header button {
+    background: alpha(@foreground, 0.035);
+    color: @foreground;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+
+window.nautilus-window columnview > header > button:hover,
+window.nautilus-window columnview header button:hover,
+window.nautilus-window columnviewheader button:hover,
+window.nautilus-window columnviewcolumn button:hover,
+window.nautilus-window .column-header button:hover {
+    background: alpha(@foreground, 0.08);
+}
+
+window.nautilus-window popover,
+window.nautilus-window popover contents,
+window.nautilus-window popover.background,
+window.nautilus-window popover.menu,
+window.nautilus-window popover.menu contents,
+window.nautilus-window modelbutton,
+window.nautilus-window popover row {
+    background: @background;
+    color: @foreground;
+    border-color: alpha(@foreground, 0.06);
+    box-shadow: 0 8px 24px alpha(@background, 0.45);
+}
+
+window.nautilus-window popover modelbutton:hover,
+window.nautilus-window popover row:hover,
+window.nautilus-window modelbutton:hover {
+    background: alpha(@foreground, 0.08);
+    color: @foreground;
+}
+/* END SOLACE NAUTILUS LIBADWAITA OVERRIDES */
+EOF
+}
+
+patch_gtk_css
+
 mkdir -p "$SOLACE_CURRENT_DIR"
 rm -rf -- "$SOLACE_THEME_LINK"
 ln -sfn "$AETHER_THEME_DIR" "$SOLACE_THEME_LINK"
@@ -47,8 +261,12 @@ command -v solace-restart-helix >/dev/null 2>&1 && solace-restart-helix || true
 
 command -v solace-theme-set-foot >/dev/null 2>&1 && solace-theme-set-foot || true
 command -v solace-theme-set-gnome >/dev/null 2>&1 && solace-theme-set-gnome || true
-command -v solace-theme-set-browser >/dev/null 2>&1 && solace-theme-set-browser || true
+if sudo -n true >/dev/null 2>&1; then
+  command -v solace-theme-set-browser >/dev/null 2>&1 && solace-theme-set-browser || true
+fi
 command -v solace-theme-set-vscode >/dev/null 2>&1 && solace-theme-set-vscode || true
 command -v solace-theme-set-obsidian >/dev/null 2>&1 && solace-theme-set-obsidian || true
-command -v solace-theme-set-keyboard >/dev/null 2>&1 && solace-theme-set-keyboard || true
+if sudo -n true >/dev/null 2>&1; then
+  command -v solace-theme-set-keyboard >/dev/null 2>&1 && solace-theme-set-keyboard || true
+fi
 command -v solace-hook >/dev/null 2>&1 && solace-hook theme-set aether >/dev/null || true

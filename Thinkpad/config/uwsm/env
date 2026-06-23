@@ -7,13 +7,10 @@ export PATH=$SOLACE_PATH/bin:$PATH
 # Set default terminal and editor
 source ~/.config/uwsm/default
 
-# Older GTK apps, including virt-manager, often ignore the portal color-scheme
-# hint and only follow GTK_THEME.
-if [[ -f ~/.config/solace/current/theme/light.mode ]]; then
-  export GTK_THEME="${GTK_THEME:-Adwaita}"
-else
-  export GTK_THEME="${GTK_THEME:-Adwaita:dark}"
-fi
+# Do not force GTK_THEME globally. GTK4/libadwaita apps such as Nautilus load
+# user CSS more reliably when the color-scheme hint and gtk.css are allowed to
+# do their work without an explicit Adwaita theme override.
+unset GTK_THEME
 
 # Activate mise if present on the system
 solace-cmd-present mise && eval "$(mise activate bash --shims)"
