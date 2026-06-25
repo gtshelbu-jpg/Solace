@@ -65,6 +65,7 @@ weston
 alacritty
 foot
 obsidian
+opencode
 syncthing
 mako
 vortix
