@@ -37,6 +37,8 @@ machine paths, caches, account/device identity and personal history.
   `solace-hyprland-lid-display`; suspend policy belongs to logind, not the lock helper.
 - Lock layout/auth preferences: `Thinkpad/config/hypr/hyprlock.conf`.
 - Idle timeout: `Thinkpad/config/hypr/hypridle.conf`.
+- Derivative integration: `hypr/derivative.conf`, empty in standard Solace;
+  final local overrides: `hypr/user.conf`. Neither changes the user's shell.
 - Lock behavior: `Thinkpad/local/share/solace/bin/solace-system-lock`.
 - Active Waybar defaults: `Thinkpad/config/waybar`; refresh defaults:
   `Thinkpad/local/share/solace/config/waybar`. Keep both intentional and consistent.

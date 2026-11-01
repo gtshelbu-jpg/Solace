@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "builder": "archiso/build.sh",
+  "extra_source_destination": "/opt/<name>",
+  "target_staging_hook": "/usr/share/solace/variant-stage-target",
+  "target_bootstrap_file": "/etc/solace/bootstrap"
+}

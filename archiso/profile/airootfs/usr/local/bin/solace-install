@@ -218,6 +218,11 @@ set -euo pipefail
 
 MARKER="${XDG_STATE_HOME:-$HOME/.local/state}/solace/postinstall.done"
 SOLACE_DIR="/opt/solace"
+BOOTSTRAP="$SOLACE_DIR/install.sh"
+if [[ -f /etc/solace/bootstrap ]]; then
+  IFS= read -r BOOTSTRAP </etc/solace/bootstrap
+  [[ $BOOTSTRAP == /opt/*/install.sh && -f $BOOTSTRAP ]] || { echo 'Invalid staged desktop bootstrap' >&2; exit 1; }
+fi
 
 if [[ "${1:-}" == "--prompt" ]]; then
   [[ -t 0 ]] || exit 0
@@ -228,7 +233,7 @@ if [[ "${1:-}" == "--prompt" ]]; then
   read -r -p "Run Solace desktop bootstrap now? [y/N] " answer
   case "$answer" in
     [Yy]|[Yy][Ee][Ss])
-      bash "$SOLACE_DIR/install.sh"
+      bash "$BOOTSTRAP"
       mkdir -p "$(dirname "$MARKER")"
       touch "$MARKER"
       ;;
@@ -236,7 +241,7 @@ if [[ "${1:-}" == "--prompt" ]]; then
   exit 0
 fi
 
-exec bash "$SOLACE_DIR/install.sh" "$@"
+exec bash "$BOOTSTRAP" "$@"
 EOF
 
   cat >"$profile_hook" <<'EOF'
@@ -259,6 +264,9 @@ stage_solace_target() {
   copy_or_clone_solace
   fix_staged_solace_permissions
   install_first_login_prompt
+  if [[ -f /usr/share/solace/variant-stage-target ]]; then
+    bash /usr/share/solace/variant-stage-target "$TARGET" "$(target_login_user)"
+  fi
   note "Solace staged into $TARGET/opt/solace"
   note "First-login prompt installed at $TARGET/etc/profile.d/solace-first-login.sh"
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -7,119 +7,122 @@ PROFILE_DIR="$SCRIPT_DIR/profile"
 WORK_DIR="$SCRIPT_DIR/work"
 OUT_DIR="$SCRIPT_DIR/out"
 LOCAL_REPO_DIR="$SCRIPT_DIR/localrepo"
+EMBED_SOURCE="$REPO_ROOT"
+GPG_DIR=""
+CLEAN=0
+ALLOW_DIRTY_SOURCES=0
+EXTRA_NAMES=()
+EXTRA_PATHS=()
 
+die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 usage() {
-  cat <<EOF
-Usage: archiso/build.sh [--clean] [--profile <path>] [--work <path>] [--out <path>]
+  cat <<'EOF'
+Usage: archiso/build.sh [options]
+  --profile PATH       Archiso profile (copied to disposable staging)
+  --work PATH          Per-variant mkarchiso work directory
+  --out PATH           ISO output directory
+  --embed-source PATH  Solace source to embed at /opt/solace
+  --extra-source NAME PATH
+                       Extra source at /opt/NAME; NAME must begin solace-
+  --local-repo PATH    Optional SIGNED local package repository
+  --gpg-dir PATH       Dedicated populated build-time Pacman keyring
+  --clean              Clean only a builder-marked work directory
+  --allow-dirty-sources  Explicit development build; embed working trees, not a release
 
-Builds a Solace ISO with mkarchiso.
-
-Defaults:
-  profile: $PROFILE_DIR
-  work:    $WORK_DIR
-  out:     $OUT_DIR
+Existing package signatures are required. No TrustAll or unsigned-repo bypass.
 EOF
 }
-
-CLEAN=0
-
-while [[ $# -gt 0 ]]; do
+while (( $# )); do
   case "$1" in
-    --clean)
-      CLEAN=1
-      shift
-      ;;
-    --profile)
-      [[ $# -ge 2 ]] || { echo "ERROR: --profile requires a path" >&2; exit 1; }
-      PROFILE_DIR="$2"
-      shift 2
-      ;;
-    --work)
-      [[ $# -ge 2 ]] || { echo "ERROR: --work requires a path" >&2; exit 1; }
-      WORK_DIR="$2"
-      shift 2
-      ;;
-    --out)
-      [[ $# -ge 2 ]] || { echo "ERROR: --out requires a path" >&2; exit 1; }
-      OUT_DIR="$2"
-      shift 2
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "ERROR: unknown argument: $1" >&2
-      usage >&2
-      exit 1
-      ;;
+    --clean) CLEAN=1; shift;;
+    --allow-dirty-sources) ALLOW_DIRTY_SOURCES=1; shift;;
+    --profile|--work|--out|--embed-source|--local-repo|--gpg-dir)
+      (( $# >= 2 )) || die "$1 requires a path"
+      case "$1" in
+        --profile) PROFILE_DIR="$2";;
+        --work) WORK_DIR="$2";;
+        --out) OUT_DIR="$2";;
+        --embed-source) EMBED_SOURCE="$2";;
+        --local-repo) LOCAL_REPO_DIR="$2";;
+        --gpg-dir) GPG_DIR="$2";;
+      esac
+      shift 2;;
+    --extra-source)
+      (( $# >= 3 )) || die "--extra-source requires NAME PATH"
+      [[ $2 =~ ^solace-[a-z0-9-]+$ ]] || die "Invalid extra source name"
+      for name in "${EXTRA_NAMES[@]}"; do [[ $name != "$2" ]] || die "Duplicate extra source"; done
+      EXTRA_NAMES+=("$2"); EXTRA_PATHS+=("$3"); shift 3;;
+    -h|--help) usage; exit 0;;
+    *) die "Unknown option: $1";;
   esac
 done
+for cmd in mkarchiso rsync realpath git tar; do command -v "$cmd" >/dev/null || die "Missing $cmd"; done
+PROFILE_DIR="$(realpath -e "$PROFILE_DIR")"
+EMBED_SOURCE="$(realpath -e "$EMBED_SOURCE")"
+WORK_DIR="$(realpath -m "$WORK_DIR")"
+OUT_DIR="$(realpath -m "$OUT_DIR")"
+[[ -f "$PROFILE_DIR/profiledef.sh" && -f "$EMBED_SOURCE/install.sh" ]] || die "Invalid profile or Solace source"
 
-if ! command -v mkarchiso >/dev/null 2>&1; then
-  echo "ERROR: mkarchiso not found. Install the archiso package first." >&2
-  exit 1
+# Never recursively remove an arbitrary --work argument or a parent of inputs.
+for protected in / /etc /usr /var /boot /opt /home /tmp /run /sys /proc /dev "$HOME" "$REPO_ROOT" "$PROFILE_DIR" "$EMBED_SOURCE" "$OUT_DIR"; do
+  [[ $WORK_DIR != "$protected" && $protected != "$WORK_DIR/"* ]] || die "Unsafe work directory: $WORK_DIR"
+done
+if [[ -d $WORK_DIR && ! -f "$WORK_DIR/.solace-build-work" && -n $(find "$WORK_DIR" -mindepth 1 -maxdepth 1 -print -quit) ]]; then
+  die "Existing unmarked work directory requires manual review"
 fi
-if ! command -v rsync >/dev/null 2>&1; then
-  echo "ERROR: rsync not found. Install rsync before building the ISO." >&2
-  exit 1
-fi
-
-[[ -d "$PROFILE_DIR" ]] || { echo "ERROR: profile directory not found: $PROFILE_DIR" >&2; exit 1; }
-[[ -f "$PROFILE_DIR/profiledef.sh" ]] || { echo "ERROR: missing profiledef.sh in $PROFILE_DIR" >&2; exit 1; }
-
-mkdir -p "$WORK_DIR" "$OUT_DIR"
-
-if [[ "$CLEAN" -eq 1 ]]; then
+if (( CLEAN )); then
+  [[ -f "$WORK_DIR/.solace-build-work" ]] || die "Refusing to clean an unmarked work directory"
   sudo rm -rf -- "$WORK_DIR"
-  mkdir -p "$WORK_DIR"
 fi
+mkdir -p "$WORK_DIR" "$OUT_DIR"
+touch "$WORK_DIR/.solace-build-work"
 
-BUILD_PROFILE_DIR=""
-PROFILE_STAGING_DIR="$(mktemp -d --tmpdir solace-archiso-profile.XXXXXXXX)"
-cp -a "$PROFILE_DIR/." "$PROFILE_STAGING_DIR/"
+STAGING="$(mktemp -d -t solace-archiso-profile.XXXXXXXX)"
+trap 'rm -rf -- "$STAGING"' EXIT
+cp -a "$PROFILE_DIR/." "$STAGING/"
 
-SOLACE_IMAGE_ROOT="$PROFILE_STAGING_DIR/airootfs/opt/solace"
-mkdir -p "$(dirname "$SOLACE_IMAGE_ROOT")"
-rsync -a --delete \
-  --exclude '/.git/' \
-  --exclude '/archiso/out/' \
-  --exclude '/archiso/work/' \
-  --exclude '/archiso/upstream/' \
-  --exclude '/archiso/localrepo/' \
-  --exclude '*.iso' \
-  --exclude '*.img' \
-  "$REPO_ROOT/" "$SOLACE_IMAGE_ROOT/"
-
-BUILD_PROFILE_DIR="$PROFILE_STAGING_DIR"
-
-if compgen -G "$LOCAL_REPO_DIR/*.pkg.tar.*" >/dev/null; then
-  if [[ ! -f "$LOCAL_REPO_DIR/solace-local.db.tar.gz" && ! -f "$LOCAL_REPO_DIR/solace-local.db" ]]; then
-    echo "ERROR: local packages exist, but the solace-local repo database is missing." >&2
-    echo "Run: repo-add $LOCAL_REPO_DIR/solace-local.db.tar.gz $LOCAL_REPO_DIR/*.pkg.tar.*" >&2
-    exit 1
+embed_source() {
+  local src="$1" name="$2"
+  [[ -d $src ]] || die "Missing embedded source: $src"
+  mkdir -p "$STAGING/airootfs/opt/$name"
+  if (( ! ALLOW_DIRTY_SOURCES )); then
+    [[ $(git -C "$src" rev-parse --show-toplevel 2>/dev/null) == "$(realpath -e "$src")" ]] || die "Release sources must be Git repository roots"
+    [[ -z $(git -C "$src" status --porcelain) ]] || die "Modified source requires --allow-dirty-sources (not a release build)"
+    git -C "$src" archive HEAD | tar -x -C "$STAGING/airootfs/opt/$name"
+    return
   fi
+  echo "WARNING: embedding development source for $name" >&2
+  rsync -a --delete \
+    --exclude '/.git/' --exclude '/.deps/' --exclude '/.work/' --exclude '/out/' \
+    --exclude '/archiso/out/' --exclude '/archiso/work/' --exclude '/archiso/upstream/' \
+    --exclude '/archiso/localrepo/' --exclude '__pycache__/' \
+    --exclude '/.venv/' --exclude '/.keys/' --exclude '.env' \
+    --exclude '*.key' --exclude '*.pem' --exclude '*.keyring' \
+    --exclude '*.iso' --exclude '*.img' \
+    "$src/" "$STAGING/airootfs/opt/$name/"
+}
+embed_source "$EMBED_SOURCE" solace
+for i in "${!EXTRA_NAMES[@]}"; do embed_source "${EXTRA_PATHS[$i]}" "${EXTRA_NAMES[$i]}"; done
 
-  cat >> "$PROFILE_STAGING_DIR/pacman.conf" <<EOF
+if [[ -n $GPG_DIR ]]; then
+  GPG_DIR="$(realpath -e "$GPG_DIR")"
+  [[ -f "$GPG_DIR/pubring.gpg" || -f "$GPG_DIR/pubring.kbx" ]] || die "Build keyring is not populated"
+  [[ $GPG_DIR != *$'\n'* ]] || die "Invalid keyring path"
+  sed -i "/^\[options\]/a GPGDir = $GPG_DIR" "$STAGING/pacman.conf"
+fi
+shopt -s nullglob
+packages=("$LOCAL_REPO_DIR"/*.pkg.tar.zst "$LOCAL_REPO_DIR"/*.pkg.tar.xz "$LOCAL_REPO_DIR"/*.pkg.tar.gz)
+if (( ${#packages[@]} )); then
+  [[ -n $GPG_DIR ]] || die "Local packages require --gpg-dir with explicitly trusted signing keys"
+  [[ -f "$LOCAL_REPO_DIR/solace-local.db" || -f "$LOCAL_REPO_DIR/solace-local.db.tar.gz" ]] || die "Missing solace-local repository database"
+  for package in "${packages[@]}"; do [[ -f "$package.sig" ]] || die "Unsigned local package: $package"; done
+  # Pacman performs the actual cryptographic verification, not just this file check.
+  cat >> "$STAGING/pacman.conf" <<EOF
 
 [solace-local]
-SigLevel = Optional TrustAll
-Server = file://$LOCAL_REPO_DIR
+SigLevel = Required TrustedOnly
+Server = file://$(realpath -e "$LOCAL_REPO_DIR")
 EOF
-  BUILD_PROFILE_DIR="$PROFILE_STAGING_DIR"
 fi
-
-cleanup() {
-  [[ -n "$PROFILE_STAGING_DIR" ]] && rm -rf -- "$PROFILE_STAGING_DIR"
-}
-trap cleanup EXIT
-
-echo "Repository: $REPO_ROOT"
-echo "Profile:    $PROFILE_DIR"
-echo "Build copy: $BUILD_PROFILE_DIR"
-echo "Embedded:  $SOLACE_IMAGE_ROOT"
-[[ -d "$LOCAL_REPO_DIR" ]] && echo "Local repo: $LOCAL_REPO_DIR"
-echo "Work dir:   $WORK_DIR"
-echo "Output dir: $OUT_DIR"
-
-sudo mkarchiso -v -w "$WORK_DIR" -o "$OUT_DIR" "$BUILD_PROFILE_DIR"
+printf 'Profile: %s\nEmbedded Solace: %s\nWork: %s\nOutput: %s\n' "$PROFILE_DIR" "$EMBED_SOURCE" "$WORK_DIR" "$OUT_DIR"
+sudo mkarchiso -v -w "$WORK_DIR" -o "$OUT_DIR" "$STAGING"

@@ -1,7 +1,7 @@
 # Solace Black: proposed downstream architecture
 
-**Design proposal only. No Black repository, remote, installer, security policy,
-repository bootstrap or firmware changes have been created/applied.**
+**Approved design; local development foundations are in progress. No public Black
+release, repository bootstrap, live installation or firmware change has been made.**
 
 Solace remains the shared everyday Arch/Hyprland desktop. Black is a separate
 security-focused downstream project, not merely another archiso configuration.
@@ -59,5 +59,19 @@ divergence justifies the fork. Do not create or publish either without approval.
 6. Test base updates, overlay reapplication, lid choices, suspend, docking, tool
    dependencies and rollback in a disposable installation before physical rollout.
 
-The feature ideas being developed elsewhere should be collected before choosing
-the repository structure definitively or implementing Black-specific policies.
+The independent Black and Assist project boundaries are approved; implementation
+milestones remain separate from deployment or security-policy enrollment approval.
+
+## Approved implementation direction
+
+Three local repositories, pinned upstream source, shared Archiso infrastructure,
+and a thin optional Elephant Lua adapter were approved. Solace Assist must remain
+terminal-emulator- and shell-independent: no Zsh-only release or silent default
+shell change. PTY transport, terminal rendering and shell command-buffer adapters
+are separate capabilities. Bash, Zsh and Fish integration need explicit tests;
+other shells retain a real-shell/manual-context path. Unsupported grammars must
+not be guessed or evaluated. No assisted-shell shortcut is installed until that
+milestone is functional.
+
+The version-1 derivative build/staging contract is in `archiso/interface.json`.
+New source revisions must be reviewed and pinned downstream before release.
