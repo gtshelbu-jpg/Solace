@@ -38,7 +38,7 @@ divergence justifies the fork. Do not create or publish either without approval.
 - **Black:** security theme, tool selections, documented opt-in policies, adapters
   for pentesting workflows, and deployment/recovery checks.
 - **Surface hardware:** tested kernel/headers/firmware/input/audio/camera/power
-  configuration, separate from Black policy. Verify current Surface Laptop 6
+  configuration, separate from Black policy. Verify current model-specific
   upstream/linux-surface support rather than copying old snapshot hardware scripts.
 
 ## Security and deployment gates
