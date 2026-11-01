@@ -50,7 +50,8 @@ hardware and the separately approved encrypted/signed boot design. Optional apps
 keybinds need their selected packages. GTK/theme screenshots should be checked on
 the fresh test installation, not by replacing the working laptop's settings.
 
-Review `git diff` and untracked additions on `reconcile/desktop-portability` before
-any commit or push. The branch starts from the local VPN-fix commit; GitHub's
-opencode addition is incorporated as content, not yet as a merge commit. Recheck
-remote history before publishing; no force push is necessary or intended.
+The changes were prepared on `reconcile/desktop-portability` and approved for
+synchronization after automated checks. History retains the local VPN-fix commit
+and GitHub's opencode package commit alongside the portability changes. Obsidian
+remains available in the optional apps group, not the base manifest. Publishing
+uses a normal fast-forward update of GitHub main, never a force push.
