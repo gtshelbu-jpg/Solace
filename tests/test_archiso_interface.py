@@ -46,6 +46,13 @@ class ArchisoInterfaceTests(unittest.TestCase):
         self.assertTrue(self.capture.is_file())
         self.assertTrue((self.root / "work/.solace-build-work").is_file())
 
+    def test_live_network_support_uses_stock_kernel_and_firmware(self):
+        packages = (ROOT / "archiso/profile/packages.x86_64").read_text().splitlines()
+        self.assertIn("linux", packages)
+        self.assertIn("linux-firmware", packages)
+        self.assertNotIn("broadcom-wl", packages)
+        self.assertNotIn("broadcom-wl-dkms", packages)
+
     def test_dangerous_clean_path_is_rejected_before_sudo(self):
         p = self.build("--work", "/", "--clean")
         self.assertNotEqual(p.returncode, 0)

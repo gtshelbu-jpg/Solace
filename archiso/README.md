@@ -34,6 +34,15 @@ archiso/
 Do not commit downloaded Arch ISO files, copied upstream releng dumps, or
 generated build output. Keep only Solace-owned profile changes in git.
 
+## Live hardware support
+
+The live profile uses the stock Arch kernel and `linux-firmware` with in-kernel
+network drivers. The retired precompiled `broadcom-wl` package is not required or
+silently replaced with a DKMS build. Hardware that requires the proprietary
+Broadcom STA driver may need Ethernet, USB tethering or a supported Wi-Fi adapter
+for installation. Additional target drivers need their own kernel/module-signing
+review; they are not enabled automatically on the live image.
+
 ## Derivative interface 1
 
 The builder remains the shared engine. `interface.json` describes the optional
