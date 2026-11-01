@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -10,14 +10,6 @@ fi
 
 LOGIN_CONFIG_ROOT="$SCRIPT_DIR/../config/login"
 SNAPSHOT_DEFAULT_ROOT="$SCRIPT_DIR/../Thinkpad/local/share/solace/default"
-LOGIN_USER="${SUDO_USER:-${USER:-}}"
-if [[ -z "$LOGIN_USER" || "$LOGIN_USER" == "root" ]]; then
-  LOGIN_USER="$(logname 2>/dev/null || true)"
-fi
-LOGIN_HOME=""
-if [[ -n "$LOGIN_USER" ]]; then
-  LOGIN_HOME="$(getent passwd "$LOGIN_USER" | cut -d: -f6 || true)"
-fi
 
 install_login_file() {
   local src="$1"
@@ -96,57 +88,10 @@ enable_login_manager() {
   fi
 }
 
-install_default_keyring() {
-  [[ -n "$LOGIN_USER" && "$LOGIN_USER" != "root" && -n "$LOGIN_HOME" ]] || die "Could not determine non-root home for default keyring"
-
-  local keyring_dir="$LOGIN_HOME/.local/share/keyrings"
-  local keyring_file="$keyring_dir/Default_keyring.keyring"
-  local default_file="$keyring_dir/default"
-
-  if [[ "$DRY_RUN" -eq 1 ]]; then
-    log "DRY: would create passwordless default keyring in $keyring_dir"
-    return 0
-  fi
-
-  mkdir -p "$keyring_dir"
-
-  cat > "$keyring_file" <<EOF
-[keyring]
-display-name=Default keyring
-ctime=$(date +%s)
-mtime=0
-lock-on-idle=false
-lock-after=false
-EOF
-
-  printf 'Default_keyring\n' > "$default_file"
-
-  chmod 700 "$keyring_dir"
-  chmod 600 "$keyring_file"
-  chmod 644 "$default_file"
-  chown -R "$LOGIN_USER:$LOGIN_USER" "$keyring_dir" 2>/dev/null || true
-}
-
-remove_sddm_password_keyring_pam() {
-  local pam_file="/etc/pam.d/sddm"
-
-  [[ -f "$pam_file" ]] || { warn "No $pam_file found; skipping SDDM PAM keyring cleanup"; return 0; }
-
-  if [[ "$DRY_RUN" -eq 1 ]]; then
-    log "DRY: would remove gnome-keyring password-login hooks from $pam_file"
-    return 0
-  fi
-
-  backup_target "$pam_file"
-  run_cmd sudo sed -i '/-auth.*pam_gnome_keyring\.so/d' "$pam_file"
-  run_cmd sudo sed -i '/-password.*pam_gnome_keyring\.so/d' "$pam_file"
-}
-
 log "Installing graphical login support"
-install_default_keyring
+log "Preserving all keyrings and distribution PAM configuration."
 install_wayland_session
 install_sddm_wayland_config
-remove_sddm_password_keyring_pam
 enable_login_manager
 
 log "Login flow configured: graphical login via SDDM, Hyprland session via Solace"

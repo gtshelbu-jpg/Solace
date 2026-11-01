@@ -55,14 +55,18 @@ Solace/
 
 This repo is a post-install bootstrap for an already-installed Arch Linux system.
 
-1. `install/install.sh` asks whether optional drawing tablet support should be installed.
-2. `install/10-packages.sh` installs official repo packages from `packages/pacman.txt`, bootstraps `yay` if needed, installs AUR packages from `packages/aur.txt`, and includes optional tablet package lists when selected.
-3. `install/20-configs.sh` backs up existing config and links or copies reviewed reusable config into the current user account.
-4. `install/30-services.sh` enables only safe, generic services.
-5. `install/31-displaylink.sh` enables DisplayLink support when `evdi-dkms` and `displaylink` are installed.
-6. `install/35-login.sh` provisions SDDM, the Solace Wayland session, and login keyring behavior using the Omarchy-derived flow.
-7. `install/36-boot-visuals.sh` installs the Solace Plymouth theme and applies Limine theming when Limine is present.
-8. `install/40-postinstall.sh` performs light finishing steps and prints follow-up guidance.
+1. Ask about lid-close behavior and optional drawing tablet support before installation.
+2. Install the shared desktop manifests and any explicitly selected optional package groups.
+3. Seed reviewed desktop configuration, Solace theme and wallpaper; preserve existing user preferences by default.
+4. Enable desktop user services and the chosen lid policy; leave networking and unrelated host services alone.
+5. Configure DisplayLink only when `--with displaylink` is selected and matching kernel headers are present.
+6. Install SDDM and the Solace session without replacing keyrings or PAM configuration.
+7. Skip all boot changes by default; legacy boot visuals require a separate explicit opt-in and are not supported with encrypted root or Secure Boot.
+8. Verify required desktop files without resetting application preferences.
+
+Read [INSTALL.md](INSTALL.md) before deployment and [CONFIGURATION.md](CONFIGURATION.md)
+for source mappings. Optional groups are documented in [packages/README.md](packages/README.md).
+The proposed separate downstream project is described in [Solace Black design](docs/SOLACE_BLACK_DESIGN.md).
 
 ### Usage
 
@@ -72,7 +76,7 @@ Dry run:
 ./install.sh --dry-run
 ```
 
-Run everything:
+Install the base desktop (interactive):
 
 ```bash
 ./install.sh
@@ -92,9 +96,10 @@ Run just packages or configs:
 ./install.sh --only login
 ```
 
-Backups of overwritten files are stored under `~/.config-backups/solace-TIMESTAMP/`.
+Existing user configuration is preserved unless `--replace-configs` is selected.
+Backups of replaced targets are stored under `~/.config-backups/solace-TIMESTAMP-PID/`.
 
 Notes:
-- The installer now uses a root wrapper `./install.sh` which ensures the inner `install/` scripts are executable before running.
-- Boot visuals are configured only after the base Arch install is already bootable; the installer does not partition disks or install a bootloader from scratch.
+- Run as a regular user, not root; the wrapper invokes stage scripts through Bash without changing file modes.
+- The installer does not partition disks, configure network connections, install a bootloader, enroll firmware keys, or configure encryption.
 - This project borrows ideas from other popular Hyprland environments; it is not tied to any single distribution overlay.

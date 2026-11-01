@@ -9,3 +9,44 @@
 /archiso/*.img
 /archiso/*.img.sig
 /archiso/*.iso.sig
+
+# Captured user/session state must not be promoted to distributable defaults.
+**/*.bak
+**/*.bak-*
+**/*.keyring
+**/*.localstorage
+**/hsts-storage.sqlite*
+**/mediakeys/
+**/storage/salt
+**/.uuid
+/Thinkpad/config/dconf/
+/Thinkpad/config/fcitx/dbus/
+/Thinkpad/config/fcitx5/conf/cached_layouts
+/Thinkpad/config/autostart/mimeinfo.cache
+/Thinkpad/config/aether/wallhaven.json
+/Thinkpad/config/aether/.protocol-handler-installed
+/Thinkpad/config/evince/print-settings
+/Thinkpad/config/urh/urh.ini
+/Thinkpad/config/solace/current/background
+/Thinkpad/config/hypr/monitors.json
+/Thinkpad/config/systemd/user/*.wants/
+
+# Never capture authentication/network/device identity from a live home.
+/Thinkpad/config/NetworkManager/
+/Thinkpad/config/iwd/
+/Thinkpad/config/vortix/
+/Thinkpad/config/Mullvad VPN/
+/Thinkpad/config/syncthing/
+/Thinkpad/config/Code/User/globalStorage/
+/Thinkpad/config/Code/User/workspaceStorage/
+/Thinkpad/config/Code/User/History/
+/Thinkpad/local/share/keyrings/
+/Thinkpad/local/share/aether/localstorage/
+**/.env
+**/.env.local
+**/id_rsa
+**/id_ed25519
+__pycache__/
+*.pyc
+/Thinkpad/**/*.key
+/Thinkpad/**/*.pem

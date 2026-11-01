@@ -7,6 +7,9 @@ set -e
 
 FIRST_RUN_MODE=~/.local/state/solace/first-run.mode
 
+# The desktop bootstrap provisions services itself, without the legacy installer.
+[[ -d $SOLACE_PATH/install/first-run ]] || exit 0
+
 if [[ -f $FIRST_RUN_MODE ]]; then
   rm -f "$FIRST_RUN_MODE"
 

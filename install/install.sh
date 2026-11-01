@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -7,7 +7,15 @@ shopt -s nullglob
 
 usage() {
   cat <<EOF
-Usage: install.sh [--dry-run] [--tablet|--no-tablet] [--only <packages|configs|services|login|boot|postinstall>]
+Usage: install.sh [options]
+
+  --dry-run                 Preview without changes or prompts
+  --only STAGE              packages|configs|services|login|boot|postinstall
+  --lid-policy POLICY       docked|suspend|awake|keep (asked before installation)
+  --with GROUP              apps|development|displaylink|security|sdr|gaming (repeatable)
+  --tablet | --no-tablet     Optional drawing tablet support
+  --replace-configs         Back up and replace existing user configs (default: preserve)
+  --boot-visuals            Opt in to boot/Plymouth changes (default: skip)
 
 Runs the numbered install scripts in $SCRIPT_DIR.
 EOF
@@ -15,12 +23,28 @@ EOF
 
 ONLY=""
 TABLET_CHOICE="${SOLACE_INSTALL_TABLET_SUPPORT:-}"
+export SOLACE_LID_POLICY="${SOLACE_LID_POLICY:-}"
+export SOLACE_PACKAGE_GROUPS="${SOLACE_PACKAGE_GROUPS:-}"
+export SOLACE_REPLACE_CONFIGS=0
+export SOLACE_BOOT_VISUALS=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) DRY_RUN=1; shift;;
     --tablet) TABLET_CHOICE=1; shift;;
     --no-tablet) TABLET_CHOICE=0; shift;;
+    --replace-configs) SOLACE_REPLACE_CONFIGS=1; shift;;
+    --boot-visuals) SOLACE_BOOT_VISUALS=1; shift;;
+    --lid-policy)
+      [[ $# -ge 2 ]] || die "--lid-policy requires a value"
+      SOLACE_LID_POLICY="$2"; shift 2;;
+    --with)
+      [[ $# -ge 2 ]] || die "--with requires a group"
+      case "$2" in
+        apps|development|displaylink|security|sdr|gaming) ;;
+        *) die "Unknown package group: $2";;
+      esac
+      SOLACE_PACKAGE_GROUPS+=" $2"; shift 2;;
     --only)
       [[ $# -ge 2 ]] || die "--only requires a value"
       ONLY="$2"
@@ -31,7 +55,39 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+case "$ONLY" in
+  ""|packages|configs|services|login|boot|postinstall) ;;
+  *) die "Unknown --only value: $ONLY";;
+esac
+if [[ $DRY_RUN -eq 0 ]]; then
+  [[ $EUID -ne 0 ]] || die "Run as your regular user, not root or sudo."
+  [[ -f /etc/arch-release ]] || die "Solace requires an installed Arch Linux system."
+fi
+
+ask_lid_policy() {
+  if [[ -z $SOLACE_LID_POLICY ]]; then
+    if [[ $DRY_RUN -eq 1 || ( -n $ONLY && $ONLY != "services" ) ]]; then
+      SOLACE_LID_POLICY=keep
+    elif [[ -t 0 ]]; then
+      printf '\nLid-close behavior (applies after reboot):\n' >&2
+      printf '  docked  Suspend undocked; stay running with external displays\n  suspend Always suspend\n  awake   Stay running; blank only the laptop panel\n  keep    Leave existing system lid policy alone\n' >&2
+      read -r -p 'Choose [docked/suspend/awake/keep] (default docked): ' SOLACE_LID_POLICY
+      SOLACE_LID_POLICY="${SOLACE_LID_POLICY:-docked}"
+    else
+      die "Non-interactive install requires --lid-policy docked|suspend|awake|keep"
+    fi
+  fi
+  case "$SOLACE_LID_POLICY" in
+    docked|suspend|awake|keep) ;;
+    *) die "Unknown lid policy: $SOLACE_LID_POLICY";;
+  esac
+}
+
 ask_tablet_support() {
+  if [[ -n $ONLY && $ONLY != "packages" ]]; then
+    export SOLACE_INSTALL_TABLET_SUPPORT="${TABLET_CHOICE:-0}"
+    return 0
+  fi
   [[ "$DRY_RUN" -eq 0 ]] || { export SOLACE_INSTALL_TABLET_SUPPORT="${TABLET_CHOICE:-0}"; return 0; }
   [[ -z "$TABLET_CHOICE" ]] || { export SOLACE_INSTALL_TABLET_SUPPORT="$TABLET_CHOICE"; return 0; }
 
@@ -53,7 +109,10 @@ ask_tablet_support() {
   export SOLACE_INSTALL_TABLET_SUPPORT="$TABLET_CHOICE"
 }
 
+ask_lid_policy
 ask_tablet_support
+export DRY_RUN
+export BACKUP_DIR="${BACKUP_DIR:-$HOME/.config-backups/solace-$(timestamp)-$$}"
 
 SCRIPTS=("$SCRIPT_DIR"/[0-9][0-9]-*.sh)
 
@@ -93,6 +152,10 @@ fi
 for s in "${SCRIPTS[@]}"; do
   [[ -f "$s" ]] || continue
   name="$(basename "$s")"
+  if [[ $name == 36-* && $SOLACE_BOOT_VISUALS != "1" ]]; then
+    log "Skipping boot changes; opt in explicitly with --boot-visuals."
+    continue
+  fi
   if [[ -n "$ONLY" ]]; then
     case "$ONLY" in
       packages) [[ "$name" == 10-* ]] || continue;;

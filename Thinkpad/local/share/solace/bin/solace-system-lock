@@ -1,11 +1,17 @@
 #!/bin/bash
 
-# solace:summary=Lock the computer and turn off the display
+# solace:summary=Lock the computer and keep the lock screen visible
 # solace:group=system
 # solace:name=lock
 # solace:examples=solace system lock
 
-if ! pidof hyprlock >/dev/null; then
+locked="$(hyprctl locked 2>/dev/null)"
+
+if [[ $locked != "true" ]] && pidof hyprlock >/dev/null; then
+  pkill -x hyprlock
+fi
+
+if [[ $locked != "true" ]]; then
   (
     hyprlock --quiet
     solace-system-wake
@@ -20,11 +26,5 @@ if pgrep -x "1password" >/dev/null; then
   1password --lock &
 fi
 
-if [[ ${SOLACE_LOCK_ONLY:-false} != "true" ]]; then
-  (
-    sleep 3
-    pidof hyprlock >/dev/null || exit 0
-    solace-brightness-keyboard off
-    solace-brightness-display off
-  ) &
-fi
+# Keep all displays powered while locked so the Solace lock screen remains
+# visible on both the built-in panel and DisplayLink outputs.

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -6,6 +6,21 @@ source "$SCRIPT_DIR/lib.sh"
 
 if [[ ${1:-} == "--dry-run" ]]; then
   DRY_RUN=1
+fi
+
+[[ ${SOLACE_BOOT_VISUALS:-0} == "1" ]] || die "Boot changes require the main installer's --boot-visuals opt-in."
+if [[ $DRY_RUN -eq 0 ]]; then
+  command -v plymouth-set-default-theme >/dev/null 2>&1 || die "Install plymouth separately before selecting boot visuals."
+fi
+# Boot visuals are not yet integrated with signing or encrypted-root recovery.
+if [[ -d /sys/firmware/efi/efivars ]]; then
+  for secure_boot_var in /sys/firmware/efi/efivars/SecureBoot-*; do
+    [[ -r $secure_boot_var ]] || die "Cannot verify Secure Boot state; refusing boot changes."
+    [[ $(od -An -t u1 -j 4 -N 1 "$secure_boot_var" | tr -d ' ') != "1" ]] || die "Boot theming is not supported with Secure Boot; leave signed artifacts untouched."
+  done
+fi
+if grep -Eq '(^|[[:space:]])(cryptdevice=|rd\.luks\.)' /proc/cmdline || lsblk -nr -o TYPE | grep -qx crypt; then
+  die "Boot theming is not yet supported on encrypted-root installations."
 fi
 
 REPO_ROOT="$SCRIPT_DIR/.."

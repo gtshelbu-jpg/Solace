@@ -18,6 +18,7 @@ solace-refresh-config elephant/desktopapplications.toml
 
 # Link all elephant menus
 mkdir -p ~/.config/elephant/menus
+shopt -s nullglob
 for menu in $SOLACE_PATH/default/elephant/*.lua; do
   ln -snf "$menu" ~/.config/elephant/menus/"$(basename "$menu")"
 done

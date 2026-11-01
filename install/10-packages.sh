@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,6 +20,32 @@ fi
 
 mapfile -t official_packages < <(read_list_file "$PKG_FILE")
 mapfile -t aur_packages < <(read_list_file "$AUR_FILE")
+
+for group in ${SOLACE_PACKAGE_GROUPS:-}; do
+  case "$group" in
+    apps|development|displaylink|security|sdr|gaming) ;;
+    *) die "Unknown package group: $group";;
+  esac
+  mapfile -t group_official < <(read_list_file "$SCRIPT_DIR/../packages/groups/$group-pacman.txt")
+  mapfile -t group_aur < <(read_list_file "$SCRIPT_DIR/../packages/groups/$group-aur.txt")
+  official_packages+=("${group_official[@]}")
+  aur_packages+=("${group_aur[@]}")
+done
+
+if has_package_group displaylink; then
+  # Archinstall chooses the kernel. Never force stock linux headers onto a Surface kernel.
+  if [[ $DRY_RUN -eq 1 ]]; then
+    log "DRY: would verify matching headers for every installed kernel before DKMS setup"
+  else
+    kernel_found=0
+    for kernel_tree in /usr/lib/modules/*; do
+      [[ -f "$kernel_tree/pkgbase" ]] || continue
+      kernel_found=1
+      [[ -e "$kernel_tree/build/Makefile" ]] || die "Install matching headers for $(cat "$kernel_tree/pkgbase") before selecting DisplayLink."
+    done
+    (( kernel_found )) || die "No installed kernel found for DisplayLink DKMS."
+  fi
+fi
 
 if [[ "${SOLACE_INSTALL_TABLET_SUPPORT:-0}" == "1" ]]; then
   log "Tablet support selected"

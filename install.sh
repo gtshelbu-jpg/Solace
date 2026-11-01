@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,7 +11,4 @@ if [[ ${#scripts[@]} -eq 0 ]]; then
   exit 1
 fi
 
-if ! chmod +x "${scripts[@]}" 2>/dev/null; then
-  printf 'WARN: could not update executable bits for install scripts; continuing with bash.\n' >&2
-fi
 exec bash "$ROOT_DIR/install/install.sh" "$@"

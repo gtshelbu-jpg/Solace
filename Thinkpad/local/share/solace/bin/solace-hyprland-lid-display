@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# solace:summary=Power only the internal display on or off for lid events
+# solace:args=<on|off>
+
+set -euo pipefail
+case "${1:-}" in
+  on|off) ;;
+  *) echo "Usage: solace-hyprland-lid-display <on|off>" >&2; exit 1;;
+esac
+
+# Connector numbering differs between machines. Never target external outputs.
+while IFS= read -r monitor; do
+  [[ -n $monitor ]] || continue
+  hyprctl dispatch dpms "$1" "$monitor" >/dev/null
+done < <(hyprctl monitors all -j | jq -r '.[] | select(.name | test("^(eDP|LVDS|DSI)-")) | .name')

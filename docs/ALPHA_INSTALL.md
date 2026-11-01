@@ -15,6 +15,12 @@
 
 ## Install Instructions
 
+**Portability update:** the current desktop bootstrap asks about lid behavior,
+preserves existing user configs and networking, and does not change boot files by
+default. Older published ISOs may contain an older embedded checkout. For a new
+encrypted/Secure-Boot machine, install Arch separately and follow the current
+[post-install guide](../INSTALL.md); do not assume an old ISO includes these fixes.
+
 1. Flash the ISO to a stick and boot the live image on your desired machine connected to Ethernet.
 2. Enter the Arch install medium and run `solace-install`.
 3. From `solace-install`, read the install guide.

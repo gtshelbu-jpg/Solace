@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,27 +8,23 @@ if [[ ${1:-} == "--dry-run" ]]; then
   DRY_RUN=1
 fi
 
-log "Post-install checks complete."
+log "Checking installed desktop configuration without resetting user preferences."
 if [[ "$DRY_RUN" -eq 1 ]]; then
-  log "DRY: would refresh application entries, MIME defaults, Walker/Elephant, current Solace/Aether theme, and Chromium flags"
+  log "DRY: would verify required desktop configs, theme outputs and wallpaper"
   log "DRY: log out and back in so Hyprland and user-session services pick up the new config links"
   exit 0
 fi
 
-run_installed_helper() {
-  local helper="$1"
-  local installed="$HOME/.local/share/solace/bin/$helper"
-
-  if command -v "$helper" >/dev/null 2>&1; then
-    "$helper" || true
-  elif [[ -x "$installed" ]]; then
-    "$installed" || true
-  fi
-}
-
-run_installed_helper solace-refresh-applications
-run_installed_helper solace-default-mimetypes
-run_installed_helper solace-refresh-walker
-run_installed_helper solace-theme-refresh
-run_installed_helper solace-refresh-chromium
+for required in \
+  hypr/hyprland.conf \
+  hypr/hypridle.conf \
+  hypr/hyprlock.conf \
+  solace/current/theme.name \
+  solace/current/theme/gum.env.conf \
+  solace/current/theme/gtk.css \
+  solace/current/background
+do
+  [[ -f "$HOME/.config/$required" ]] || die "Missing desktop configuration: ~/.config/$required"
+done
+log "Keyrings, MIME preferences and existing application settings were not refreshed or reset."
 log "Log out and back in so Hyprland and user-session services pick up the new config links."

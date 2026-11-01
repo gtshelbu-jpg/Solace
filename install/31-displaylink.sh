@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,7 +8,12 @@ if [[ ${1:-} == "--dry-run" ]]; then
   DRY_RUN=1
 fi
 
-log "Configuring DisplayLink support"
+if ! has_package_group displaylink; then
+  log "Skipping optional DisplayLink setup (select --with displaylink)."
+  exit 0
+fi
+
+log "Configuring optional DisplayLink support"
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
   log "DRY: would install /etc/modules-load.d/evdi.conf"

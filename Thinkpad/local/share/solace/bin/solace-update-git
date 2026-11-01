@@ -4,6 +4,11 @@
 
 set -e
 
+if [[ ! -d $SOLACE_PATH/.git ]]; then
+  echo "This is a copied-assets installation. Update your Solace source checkout and rerun its installer; runtime files are not a Git repository." >&2
+  exit 1
+fi
+
 echo -e "\e[32mUpdate Solace\e[0m"
 
 solace-update-time

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -117,6 +117,10 @@ seed_shell_startup() {
     return 0
   fi
 
+  if [[ ( -e $bash_profile || -L $bash_profile ) && ${SOLACE_REPLACE_CONFIGS:-0} != "1" ]]; then
+    log "Preserving $bash_profile"
+    return 0
+  fi
   if [[ -e "$bash_profile" || -L "$bash_profile" ]]; then
     backup_target "$bash_profile"
     rm -rf -- "$bash_profile"
@@ -158,14 +162,17 @@ install_snapshot_fonts() {
 copy_snapshot_entry() {
   local src="$1"
   local dest="$2"
-  safe_copy "$src" "$dest"
+  safe_copy "$src" "$dest" "${3:-preserve}"
 }
 
 install_snapshot_config() {
   local name
+  local seed_mime=0
+  if [[ ( ! -e "$CONFIG_HOME/mimeapps.list" && ! -L "$CONFIG_HOME/mimeapps.list" ) || ${SOLACE_REPLACE_CONFIGS:-0} == "1" ]]; then
+    seed_mime=1
+  fi
 
   for name in \
-    aether \
     alacritty \
     autostart \
     btop \
@@ -185,7 +192,6 @@ install_snapshot_config() {
     mimeapps.list \
     mise \
     nvim \
-    solace \
     starship.toml \
     swayosd \
     systemd \
@@ -201,13 +207,60 @@ install_snapshot_config() {
     copy_snapshot_entry "$SNAPSHOT_CONFIG/$name" "$CONFIG_HOME/$name"
   done
 
+  # Only reviewed preferences/templates: never copy current-theme symlinks,
+  # API settings, browser storage or other application state from a home snapshot.
+  for name in branding extensions hooks themed; do
+    [[ -d "$SNAPSHOT_CONFIG/solace/$name" ]] || continue
+    safe_copy "$SNAPSHOT_CONFIG/solace/$name" "$CONFIG_HOME/solace/$name"
+  done
+  for name in custom theme; do
+    [[ -d "$SNAPSHOT_CONFIG/aether/$name" ]] || continue
+    safe_copy "$SNAPSHOT_CONFIG/aether/$name" "$CONFIG_HOME/aether/$name"
+  done
+  local blueprint target escaped_home
+  escaped_home="${HOME//\\/\\\\}"
+  escaped_home="${escaped_home//&/\\&}"
+  escaped_home="${escaped_home//|/\\|}"
+  for blueprint in "$SNAPSHOT_CONFIG/aether/blueprints"/*.json; do
+    target="$CONFIG_HOME/aether/blueprints/$(basename "$blueprint")"
+    if [[ ( -e $target || -L $target ) && ${SOLACE_REPLACE_CONFIGS:-0} != "1" ]]; then
+      continue
+    fi
+    safe_copy "$blueprint" "$target"
+    if [[ $DRY_RUN -eq 0 ]]; then
+      sed -i "s|@HOME@|$escaped_home|g" "$target"
+    fi
+  done
+
   # Keep monitor layout generic. Explicit display descriptors belong in machine profiles.
   safe_copy "$CONFIG_ROOT/hypr/monitors.conf" "$CONFIG_HOME/hypr/monitors.conf"
+  # Reviewed editor preferences only: never copy Code's account/history/storage.
+  safe_copy "$SNAPSHOT_CONFIG/Code/User/settings.json" "$CONFIG_HOME/Code/User/settings.json"
+  if [[ $seed_mime -eq 1 && $DRY_RUN -eq 0 ]] && ! has_package_group apps; then
+    # The captured laptop prefers optional Zen/Chrome; the base includes Chromium.
+    sed -i -e 's/zen\.desktop/chromium.desktop/g' -e 's/google-chrome\.desktop/chromium.desktop/g' "$CONFIG_HOME/mimeapps.list"
+  fi
+}
+
+seed_application_entries() {
+  local entry
+  for entry in "$SNAPSHOT_SOLACE/applications"/*.desktop "$SNAPSHOT_SOLACE/applications/hidden"/*.desktop; do
+    safe_copy "$entry" "$LOCAL_APPLICATIONS_HOME/$(basename "$entry")"
+  done
+  for entry in "$SNAPSHOT_SOLACE/applications/icons"/*.png; do
+    safe_copy "$entry" "$HOME/.local/share/icons/hicolor/48x48/apps/$(basename "$entry")"
+  done
+  if command -v update-desktop-database >/dev/null 2>&1; then
+    run_cmd update-desktop-database "$LOCAL_APPLICATIONS_HOME"
+  fi
 }
 
 install_snapshot_aether_assets() {
   if [[ -d "$SNAPSHOT_AETHER_SHARE" ]]; then
-    copy_snapshot_entry "$SNAPSHOT_AETHER_SHARE" "$LOCAL_AETHER_SHARE_HOME"
+    # Wallpaper assets only, not webview databases, salts or session storage.
+    if [[ -d "$SNAPSHOT_AETHER_SHARE/wallpapers" ]]; then
+      safe_copy "$SNAPSHOT_AETHER_SHARE/wallpapers" "$LOCAL_AETHER_SHARE_HOME/wallpapers"
+    fi
   fi
 
   if [[ -f "$SNAPSHOT_APPLICATIONS/aether-protocol-handler.desktop" ]]; then
@@ -226,14 +279,14 @@ install_snapshot_solace_assets() {
         install_snapshot_default_assets
         ;;
       *)
-        copy_snapshot_entry "$SNAPSHOT_SOLACE/$name" "$LOCAL_SHARE_HOME/$name"
+        copy_snapshot_entry "$SNAPSHOT_SOLACE/$name" "$LOCAL_SHARE_HOME/$name" managed
         ;;
     esac
   done
 
   for asset in logo.txt logo.svg; do
     [[ -f "$SNAPSHOT_SOLACE/$asset" ]] || continue
-    safe_copy "$SNAPSHOT_SOLACE/$asset" "$LOCAL_SHARE_HOME/$asset"
+    safe_copy "$SNAPSHOT_SOLACE/$asset" "$LOCAL_SHARE_HOME/$asset" managed
   done
 
   install_snapshot_bins
@@ -249,7 +302,7 @@ install_snapshot_default_assets() {
         log "Skipping unsafe default asset: $name"
         ;;
       *)
-        copy_snapshot_entry "$name" "$LOCAL_SHARE_HOME/default/$(basename "$name")"
+        copy_snapshot_entry "$name" "$LOCAL_SHARE_HOME/default/$(basename "$name")" managed
         ;;
     esac
   done
@@ -260,7 +313,7 @@ install_snapshot_bins() {
   local link_src
 
   [[ -d "$SNAPSHOT_SOLACE/bin" ]] || return 0
-  copy_snapshot_entry "$SNAPSHOT_SOLACE/bin" "$LOCAL_SHARE_HOME/bin"
+  copy_snapshot_entry "$SNAPSHOT_SOLACE/bin" "$LOCAL_SHARE_HOME/bin" managed
 
   for src in "$SNAPSHOT_SOLACE/bin"/*; do
     [[ -e "$src" || -L "$src" ]] || continue
@@ -353,52 +406,57 @@ seed_desktop_background() {
   fi
 
   [[ -e "$current_background" || -L "$current_background" ]] && return 0
-  default_background="$(find -L "$CONFIG_HOME/solace/current/theme/backgrounds" -maxdepth 1 -type f 2>/dev/null | sort | head -n1 || true)"
+  default_background="$CONFIG_HOME/solace/current/theme/backgrounds/wallhaven-nmmvvk.jpg"
+  if [[ ! -f $default_background ]]; then
+    default_background="$(find -L "$CONFIG_HOME/solace/current/theme/backgrounds" -maxdepth 1 -type f 2>/dev/null | sort | head -n1 || true)"
+  fi
   [[ -n "$default_background" ]] || return 0
 
   ln -s "$(realpath --relative-to="$(dirname "$current_background")" "$default_background")" "$current_background"
 }
 
-seed_aether_theme_bridge() {
-  local aether_theme="$CONFIG_HOME/aether/theme"
+seed_current_theme() {
   local solace_current="$CONFIG_HOME/solace/current"
   local solace_theme="$solace_current/theme"
   local theme_name="$solace_current/theme.name"
-  local current_background="$solace_current/background"
-  local first_background
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
-    log "DRY: would bridge Aether theme output into Solace current theme"
+    log "DRY: would seed Solace theme and palette-generated outputs only if no theme exists"
     return 0
   fi
 
-  [[ -d "$aether_theme" ]] || return 0
-
   mkdir -p "$solace_current"
-  rm -rf -- "$solace_theme"
-  ln -sfn "$aether_theme" "$solace_theme"
-  printf 'aether\n' >"$theme_name"
+  if [[ ! -e $solace_theme && ! -L $solace_theme && ! -e $theme_name ]]; then
+    [[ ! -e "$solace_current/next-theme" && ! -L "$solace_current/next-theme" ]] || die "Existing next-theme directory needs manual review before seeding a theme."
+    cp -a "$LOCAL_SHARE_HOME/themes/solace" "$solace_theme"
+    printf 'solace\n' >"$theme_name"
+    # Generate without launching/restarting any desktop applications.
+    mkdir -p "$solace_current/next-theme"
+    cp -a "$solace_theme/." "$solace_current/next-theme/"
+    rm -f "$solace_current/next-theme/gtk.css"
+    SOLACE_PATH="$LOCAL_SHARE_HOME" bash "$LOCAL_SHARE_HOME/bin/solace-theme-set-templates"
+    cp -a "$solace_current/next-theme/." "$solace_theme/"
+    rm -rf -- "$solace_current/next-theme"
+  fi
+
+  [[ -d $solace_theme && -f $theme_name ]] || die "Incomplete existing theme; repair ~/.config/solace/current before continuing."
 
   mkdir -p "$CONFIG_HOME/btop/themes" "$CONFIG_HOME/mako" "$CONFIG_HOME/zed/themes"
-  ln -sfn "$CONFIG_HOME/solace/current/theme/btop.theme" "$CONFIG_HOME/btop/themes/current.theme"
-  ln -sfn "$CONFIG_HOME/solace/current/theme/mako.ini" "$CONFIG_HOME/mako/config"
-  ln -sfn "$CONFIG_HOME/solace/current/theme/aether.zed.json" "$CONFIG_HOME/zed/themes/aether.json"
-
-  if [[ ! -e "$current_background" && ! -L "$current_background" ]]; then
-    first_background="$(find -L "$aether_theme/backgrounds" -maxdepth 1 -type f 2>/dev/null | sort | head -n1 || true)"
-    [[ -n "$first_background" ]] && ln -sfn "$first_background" "$current_background"
-  fi
+  safe_link "$solace_theme/btop.theme" "$CONFIG_HOME/btop/themes/current.theme"
+  safe_link "$solace_theme/mako.ini" "$CONFIG_HOME/mako/config"
+  safe_link "$solace_theme/aether.zed.json" "$CONFIG_HOME/zed/themes/aether.json"
 }
 
 install_snapshot_config
 install_snapshot_solace_assets
 install_snapshot_aether_assets
+seed_application_entries
 install_snapshot_fonts
 sanitize_installed_hypr_defaults
 remove_storage_shell_helpers
 seed_hypr_toggle_state
+seed_current_theme
 seed_desktop_background
-seed_aether_theme_bridge
 install_script_helpers
 seed_shell_startup
 

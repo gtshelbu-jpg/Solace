@@ -1,0 +1,8 @@
+zed
+zellij
+docker
+jdk21-openjdk
+pacman-contrib
+man-db
+man-pages
+tldr

@@ -1,0 +1,7 @@
+spotify
+cliamp
+google-chrome
+zen-browser-bin
+localsend-bin
+vesktop-bin
+termius

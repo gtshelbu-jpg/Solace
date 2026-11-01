@@ -1,0 +1,13 @@
+{
+  "workbench.colorTheme": "Solace",
+  "containers.containerClient": "com.microsoft.visualstudio.containers.docker",
+  "containers.orchestratorClient": "com.microsoft.visualstudio.orchestrators.dockercompose",
+  "redhat.telemetry.enabled": false,
+  "jdk.telemetry.enabled": false,
+  "github.copilot.enable": {
+    "*": false
+  },
+  "extensions.experimental.affinity": {
+    "asvetliakov.vscode-neovim": 1
+  }
+}

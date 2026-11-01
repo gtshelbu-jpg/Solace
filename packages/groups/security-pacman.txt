@@ -1,0 +1,10 @@
+# Optional upstream Arch tools, NOT a BlackArch repository bootstrap.
+# No service, firewall rule, VPN account or network-manager change is enabled.
+aircrack-ng
+bind
+kismet
+nmap
+openvpn
+traceroute
+wireguard-tools
+wireshark-qt

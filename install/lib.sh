@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 DRY_RUN="${DRY_RUN:-0}"
@@ -69,8 +69,8 @@ timestamp() { date -u +%Y%m%dT%H%M%SZ; }
 ensure_backup_dir() {
   if [[ -z "$BACKUP_DIR" ]]; then
     BACKUP_DIR="$HOME/.config-backups/solace-$(timestamp)"
-    mkdir -p "$BACKUP_DIR"
   fi
+  mkdir -p "$BACKUP_DIR"
 }
 
 backup_target() {
@@ -87,6 +87,7 @@ backup_target() {
   fi
 
   local backup_path="$BACKUP_DIR/$rel_path"
+  [[ ! -e $backup_path && ! -L $backup_path ]] || return 0
   mkdir -p "$(dirname "$backup_path")"
   log "Backing up $target -> $backup_path"
   cp -a -- "$target" "$backup_path"
@@ -114,6 +115,11 @@ safe_link() {
   local src="$1" dest="$2"
   [[ -e "$src" || -L "$src" ]] || die "Source not found: $src"
 
+  if [[ ( -e $dest || -L $dest ) && ${SOLACE_REPLACE_CONFIGS:-0} != "1" ]]; then
+    log "Preserving $dest"
+    return 0
+  fi
+
   if [[ "$DRY_RUN" -eq 1 ]]; then
     log "DRY: would link $src -> $dest"
     return 0
@@ -132,8 +138,16 @@ safe_link() {
 }
 
 safe_copy() {
-  local src="$1" dest="$2"
+  local src="$1" dest="$2" policy="${3:-preserve}"
   [[ -e "$src" || -L "$src" ]] || die "Source not found: $src"
+
+  if [[ ( -e $dest || -L $dest ) && $policy != "managed" && ${SOLACE_REPLACE_CONFIGS:-0} != "1" ]]; then
+    log "Preserving $dest"
+    return 0
+  fi
+  if [[ -f $src && -f $dest && ! -L $src && ! -L $dest ]] && cmp -s "$src" "$dest"; then
+    return 0
+  fi
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
     log "DRY: would copy $src -> $dest"
@@ -152,6 +166,10 @@ safe_copy() {
 
 install_executable() {
   local src="$1" dest="$2"
+  if [[ ( -e $dest || -L $dest ) && ${SOLACE_REPLACE_CONFIGS:-0} != "1" ]]; then
+    log "Preserving $dest"
+    return 0
+  fi
   safe_copy "$src" "$dest"
 
   if [[ "$DRY_RUN" -eq 0 ]]; then
@@ -165,5 +183,9 @@ read_list_file() {
   local file="$1"
   [[ -f "$file" ]] || return 0
 
-  grep -E -v '^[[:space:]]*($|#)' "$file" | sed 's/[[:space:]]*$//'
+  sed -e 's/#.*//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e '/^$/d' "$file"
+}
+
+has_package_group() {
+  [[ " ${SOLACE_PACKAGE_GROUPS:-} " == *" $1 "* ]]
 }

@@ -1,0 +1,8 @@
+# Optional everyday desktop apps; no accounts or profiles are copied.
+obsidian
+obs-studio
+qbittorrent
+rpi-imager
+fooyin
+kolourpaint
+nautilus-python

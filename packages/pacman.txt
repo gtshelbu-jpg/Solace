@@ -17,8 +17,6 @@
 
 # Add packages below this line
 base-devel
-dkms
-linux-headers
 linux-firmware
 git
 jq
@@ -54,7 +52,6 @@ uwsm
 sddm
 polkit-gnome
 power-profiles-daemon
-plymouth
 qt5-base
 qt5-declarative
 qt5-wayland
@@ -64,7 +61,7 @@ waybar
 weston
 alacritty
 foot
-obsidian
+opencode
 syncthing
 mako
 vortix
@@ -101,6 +98,7 @@ starship
 wiremix
 wofi
 wtype
-zed
-zellij
+tmux
+lazygit
+tree-sitter-cli
 zoxide

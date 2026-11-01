@@ -9,3 +9,8 @@ source ~/.local/share/solace/default/bash/rc
 #
 # Make an alias for invoking commands you use constantly
 # alias p='python'
+
+# Optional SDR workflow; no dependency is installed unless that group is selected.
+if command -v dsd-fme >/dev/null 2>&1; then
+  alias dsd='dsd-fme -i tcp -T -U 4532 -N -mq 2>dsd-fme.log'
+fi

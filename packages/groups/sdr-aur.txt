@@ -1,0 +1,4 @@
+dsd-fme
+sdrpp-git
+sdrpp-tetra-demodulator-git
+sdrtrunk-bin
