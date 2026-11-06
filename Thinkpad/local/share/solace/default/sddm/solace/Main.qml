@@ -22,9 +22,12 @@ Rectangle {
 
   property string currentUser: defaultUserName()
   property bool loginFailed: false
+  // SDDM SessionModel exposes "name" as NameRole (UserRole + 4),
+  // not DisplayRole. The latter returns an empty QVariant in the real greeter.
+  readonly property int sessionNameRole: Qt.UserRole + 4
   property int sessionIndex: {
     for (var i = 0; i < sessionModel.rowCount(); i++) {
-      var name = (sessionModel.data(sessionModel.index(i, 0), Qt.DisplayRole) || "").toString()
+      var name = (sessionModel.data(sessionModel.index(i, 0), root.sessionNameRole) || "").toString()
       if (name === "Solace (Hyprland uwsm)")
         return i
     }
@@ -32,7 +35,7 @@ Rectangle {
   }
 
   function sessionName() {
-    return (sessionModel.data(sessionModel.index(root.sessionIndex, 0), Qt.DisplayRole) || "No session available").toString()
+    return (sessionModel.data(sessionModel.index(root.sessionIndex, 0), root.sessionNameRole) || "No session available").toString()
   }
 
   function cycleSession(step) {

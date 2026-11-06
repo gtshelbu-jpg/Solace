@@ -11,7 +11,8 @@ Item {
     property var names: ["Solace Lua Test (snapshot)", "Hyprland", "Solace (Hyprland uwsm)"]
     function rowCount() { return names.length }
     function index(row, column) { return row }
-    function data(row, role) { return names[row] }
+    // Match the actual SDDM model: DisplayRole is deliberately unsupported.
+    function data(row, role) { return role === Qt.UserRole + 4 ? names[row] : "" }
   }
   property var userModel: QtObject {
     property string lastUser: "testuser"
@@ -42,6 +43,7 @@ Item {
     }
 
     function test_01_normal_session_is_default_not_first_solace_match() {
+      compare(sessionModel.data(0, Qt.DisplayRole), "")
       compare(theme.sessionIndex, 2)
       compare(theme.sessionName(), "Solace (Hyprland uwsm)")
     }
