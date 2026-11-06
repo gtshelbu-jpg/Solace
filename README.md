@@ -64,6 +64,13 @@ This repo is a post-install bootstrap for an already-installed Arch Linux system
 7. Skip all boot changes by default; legacy boot visuals require a separate explicit opt-in and are not supported with encrypted root or Secure Boot.
 8. Verify required desktop files without resetting application preferences.
 
+The default AUR path builds local packages with `makepkg`. Standard Arch permits
+unsigned local builds (`LocalFileSigLevel = Optional TrustedOnly`) while requiring
+repository signatures. The package stage checks for a strict local-signature
+requirement before starting transactions and stops with guidance rather than
+silently changing an administrator's trust policy. Strict local-signature setups
+need a separately configured signed-package workflow instead of this default path.
+
 Read [INSTALL.md](INSTALL.md) before deployment and [CONFIGURATION.md](CONFIGURATION.md)
 for source mappings. Optional groups are documented in [packages/README.md](packages/README.md).
 The proposed separate downstream project is described in [Solace Black design](docs/SOLACE_BLACK_DESIGN.md).

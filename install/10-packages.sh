@@ -57,6 +57,15 @@ else
   log "Tablet support not selected"
 fi
 
+# A strict local-package policy cannot install ordinary unsigned makepkg output.
+# Check before any package transactions; never silently override custom trust.
+if [[ ${#aur_packages[@]} -gt 0 && "$DRY_RUN" -eq 0 ]]; then
+  local_siglevel="$(pacman-conf LocalFileSigLevel)" || die "Unable to read Pacman local-package signature policy."
+  if [[ " $local_siglevel " == *" PackageRequired "* ]]; then
+    die "AUR builds require local-package signing or an explicit policy change. Standard Arch uses LocalFileSigLevel = Optional TrustedOnly in /etc/pacman.conf; repository SigLevel must remain Required. No signature policy was changed."
+  fi
+fi
+
 if [[ ${#official_packages[@]} -gt 0 ]]; then
   log "Installing ${#official_packages[@]} official packages from $PKG_FILE"
   if [[ "$DRY_RUN" -eq 1 ]]; then

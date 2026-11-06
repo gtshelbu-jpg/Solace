@@ -60,6 +60,20 @@ class InstallerTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
         return result.stdout + result.stderr
 
+    def test_strict_local_package_policy_stops_before_transactions(self):
+        self.stub("pacman-conf", 'echo "PackageRequired PackageTrustedOnly"\n')
+        output = self.run_script("install/10-packages.sh", success=False)
+        self.assertIn("AUR builds require", output)
+        self.assertIn("No signature policy was changed", output)
+        self.assertFalse(self.log.exists())
+
+    def test_optional_local_package_policy_reaches_package_stage(self):
+        self.stub("pacman-conf", 'echo "PackageOptional PackageTrustedOnly"\n')
+        self.stub("sudo", 'echo "package-stage-reached"; exit 91\n')
+        output = self.run_script("install/10-packages.sh", success=False)
+        self.assertIn("package-stage-reached", output)
+        self.assertNotIn("AUR builds require", output)
+
     def test_fresh_config_then_preserving_rerun(self):
         self.run_script("install/20-configs.sh")
         config = self.home / ".config"
