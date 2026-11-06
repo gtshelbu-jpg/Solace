@@ -96,6 +96,20 @@ Other stages: `packages`, `services`, `login`, `boot`, `postinstall`.
 The login stage installs SDDM/Solace, disables the known autologin drop-in, and
 enables graphical login. Inspect custom display-manager/autologin setups first.
 
+The Solace SDDM theme includes a **Session** selector below the password field.
+Click it to cycle installed sessions, or focus it with Tab and use the arrow keys.
+Enter in the password field logs into the displayed session. The exact standard
+`Solace (Hyprland uwsm)` entry is the initial default when available; additional
+Solace-named test sessions do not silently take precedence.
+
+The selector's Qt Quick tests can run without a display or real authentication
+when Qt 6 development/test tools and SDDM's QML components are installed:
+
+```bash
+QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \
+  /usr/lib/qt6/bin/qmltestrunner -input tests/tst_sddm_session.qml
+```
+
 ## Boot visuals are separate and opt-in
 
 The default installer **does not touch boot files**. Optional legacy boot theming:

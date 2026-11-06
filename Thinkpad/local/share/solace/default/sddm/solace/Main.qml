@@ -1,4 +1,4 @@
-import QtQuick 2.0
+import QtQuick 2.15
 import SddmComponents 2.0
 
 Rectangle {
@@ -25,10 +25,20 @@ Rectangle {
   property int sessionIndex: {
     for (var i = 0; i < sessionModel.rowCount(); i++) {
       var name = (sessionModel.data(sessionModel.index(i, 0), Qt.DisplayRole) || "").toString()
-      if (name.indexOf("Solace") !== -1 || name.indexOf("uwsm") !== -1)
+      if (name === "Solace (Hyprland uwsm)")
         return i
     }
-    return sessionModel.lastIndex
+    return sessionModel.lastIndex >= 0 ? sessionModel.lastIndex : 0
+  }
+
+  function sessionName() {
+    return (sessionModel.data(sessionModel.index(root.sessionIndex, 0), Qt.DisplayRole) || "No session available").toString()
+  }
+
+  function cycleSession(step) {
+    var count = sessionModel.rowCount()
+    if (count > 0)
+      root.sessionIndex = (root.sessionIndex + step + count) % count
   }
 
   Image {
@@ -89,7 +99,7 @@ Rectangle {
   Rectangle {
     id: panel
     width: Math.min(440, root.width - 64)
-    height: 500
+    height: 580
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
     anchors.rightMargin: Math.max(38, root.width * 0.09)
@@ -137,6 +147,7 @@ Rectangle {
 
         TextInput {
           id: username
+          objectName: "username"
           anchors.fill: parent
           anchors.leftMargin: 16
           anchors.rightMargin: 16
@@ -149,7 +160,7 @@ Rectangle {
           font.pixelSize: 18
           selectByMouse: true
 
-          Keys.onPressed: {
+          Keys.onPressed: function(event) {
             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
               password.forceActiveFocus()
               event.accepted = true
@@ -168,6 +179,7 @@ Rectangle {
 
         TextInput {
           id: password
+          objectName: "password"
           anchors.fill: parent
           anchors.leftMargin: 18
           anchors.rightMargin: 18
@@ -180,10 +192,11 @@ Rectangle {
           font.family: "JetBrainsMono Nerd Font"
           font.pixelSize: 22
           focus: true
+          KeyNavigation.tab: sessionSelector
 
           onTextChanged: root.loginFailed = false
 
-          Keys.onPressed: {
+          Keys.onPressed: function(event) {
             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
               sddm.login(username.text, password.text, root.sessionIndex)
               event.accepted = true
@@ -203,9 +216,57 @@ Rectangle {
         }
       }
 
+      Rectangle {
+        id: sessionSelector
+        objectName: "sessionSelector"
+        width: parent.width
+        height: 48
+        radius: 10
+        color: "#66070b12"
+        border.color: activeFocus ? "#8bb8ff" : "#26ffffff"
+        border.width: 1
+        activeFocusOnTab: true
+        KeyNavigation.tab: username
+        KeyNavigation.backtab: password
+        Accessible.name: "Session: " + root.sessionName()
+
+        Text {
+          anchors.fill: parent
+          anchors.margins: 12
+          verticalAlignment: Text.AlignVCenter
+          text: "Session: " + root.sessionName() + "  ›"
+          elide: Text.ElideRight
+          color: "#f6f7fb"
+          font.family: "Inter"
+          font.pixelSize: 13
+        }
+
+        MouseArea {
+          anchors.fill: parent
+          onClicked: {
+            root.cycleSession(1)
+            password.forceActiveFocus()
+          }
+        }
+
+        Keys.onPressed: function(event) {
+          if (event.key === Qt.Key_Left || event.key === Qt.Key_Up) {
+            root.cycleSession(-1)
+            event.accepted = true
+          } else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down || event.key === Qt.Key_Space) {
+            root.cycleSession(1)
+            event.accepted = true
+          } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            password.forceActiveFocus()
+            event.accepted = true
+          }
+        }
+      }
+
       Text {
         width: parent.width
-        text: root.loginFailed ? "Password was not accepted" : "Press Enter to start Solace"
+        text: root.loginFailed ? "Password was not accepted" : "Click session to change · Enter in password to log in"
+        wrapMode: Text.WordWrap
         color: root.loginFailed ? "#ff9f9f" : "#8d98ad"
         font.family: "Inter"
         font.pixelSize: 14
