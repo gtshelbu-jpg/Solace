@@ -33,7 +33,8 @@ for group in ${SOLACE_PACKAGE_GROUPS:-}; do
 done
 
 if has_package_group displaylink; then
-  # Archinstall chooses the kernel. Never force stock linux headers onto a Surface kernel.
+  # Archinstall chooses the kernel. Select headers only for known Arch families;
+  # custom kernels need their own explicit matching-header setup.
   if [[ $DRY_RUN -eq 1 ]]; then
     log "DRY: would verify matching headers for every installed kernel before DKMS setup"
   else
@@ -41,7 +42,15 @@ if has_package_group displaylink; then
     for kernel_tree in /usr/lib/modules/*; do
       [[ -f "$kernel_tree/pkgbase" ]] || continue
       kernel_found=1
-      [[ -e "$kernel_tree/build/Makefile" ]] || die "Install matching headers for $(cat "$kernel_tree/pkgbase") before selecting DisplayLink."
+      if [[ ! -e "$kernel_tree/build/Makefile" ]]; then
+        kernel_base="$(cat "$kernel_tree/pkgbase")"
+        case "$kernel_base" in
+          linux|linux-lts|linux-zen|linux-hardened)
+            official_packages+=("$kernel_base-headers")
+            log "Selecting matching $kernel_base-headers for DisplayLink DKMS.";;
+          *) die "Install matching headers for $kernel_base before selecting DisplayLink; no stock headers were substituted.";;
+        esac
+      fi
     done
     (( kernel_found )) || die "No installed kernel found for DisplayLink DKMS."
   fi

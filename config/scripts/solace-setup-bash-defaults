@@ -1,0 +1,75 @@
+#!/bin/bash
+set -euo pipefail
+
+# --if-stock is the installer's conservative automatic mode. Without it, the
+# user explicitly requests shared defaults before their personal overrides.
+python3 - "$@" <<'PY'
+import os
+from pathlib import Path
+import re
+import shutil
+import sys
+import tempfile
+import time
+
+if sys.argv[1:] not in ([], ['--if-stock']):
+    raise SystemExit('Usage: solace-setup-bash-defaults [--if-stock]')
+automatic = '--if-stock' in sys.argv[1:]
+home = Path.home()
+rc = home / '.bashrc'
+shared = home / '.local/share/solace/default/bash/rc'
+if rc.is_symlink():
+    if automatic:
+        print('Preserving symlinked Bash configuration; shared defaults require explicit review.')
+        raise SystemExit(0)
+    raise SystemExit('Preserving symlinked .bashrc; integrate shared defaults in its source manually.')
+if not shared.is_file():
+    raise SystemExit('Install Solace Bash assets before enabling shared defaults.')
+original = rc.read_text() if rc.exists() else ''
+if re.search(r"^\s*(?:source|\.)\s+.*solace/default/bash/rc[\"']?\s*$", original, re.M):
+    print('Solace Bash defaults already configured.')
+    raise SystemExit(0)
+# Remove only the exact prompt-only block installed by our earlier opt-in helper;
+# the shared init already initializes Starship and must not initialize it twice.
+prompt_block = '''# Solace Starship prompt: enabled explicitly; existing Bash settings stay above.
+if [[ $- == *i* && ${TERM:-} != "dumb" ]] && command -v starship >/dev/null 2>&1; then
+  eval "$(starship init bash)"
+fi'''
+clean = original.replace(prompt_block, '')
+stock = {
+    '[[ $- != *i* ]] && return',
+    "alias ls='ls --color=auto'",
+    "alias grep='grep --color=auto'",
+    r"PS1='[\u@\h \W]\$ '",
+}
+meaningful = [line.strip() for line in clean.splitlines() if line.strip() and not line.lstrip().startswith('#')]
+if automatic and (not meaningful or '[[ $- != *i* ]] && return' not in meaningful or any(line not in stock for line in meaningful)):
+    print('Preserving customized Bash startup. Use --bash-defaults to opt into shared defaults.')
+    raise SystemExit(0)
+tail = '\n'.join(line for line in clean.splitlines()
+                 if line.strip() not in {"alias ls='ls --color=auto'", r"PS1='[\u@\h \W]\$ '", '[[ $- != *i* ]] && return'})
+text = '''# Solace shared Bash defaults; personal overrides stay below.
+[[ $- != *i* ]] && return
+source "$HOME/.local/share/solace/default/bash/rc"
+
+# Preserved startup and personal overrides:
+''' + tail.strip() + '\n'
+backup_root = Path(os.environ.get('BACKUP_DIR', home / '.config-backups' / ('solace-bash-' + time.strftime('%Y%m%d-%H%M%S') + '-' + str(os.getpid()))))
+backup = backup_root / 'bash-defaults'
+backup.mkdir(parents=True, mode=0o700)
+if rc.exists():
+    if (backup / '.bashrc').exists():
+        raise SystemExit('Backup already exists; refusing to overwrite it.')
+    shutil.copy2(rc, backup / '.bashrc')
+fd, temp = tempfile.mkstemp(prefix='.bashrc.solace-', dir=home)
+try:
+    with os.fdopen(fd, 'w') as handle:
+        handle.write(text)
+    if rc.exists():
+        shutil.copystat(rc, temp)
+    os.replace(temp, rc)
+finally:
+    if Path(temp).exists():
+        Path(temp).unlink()
+print('Solace Bash aliases, functions, completions and prompt enabled for new shells. Backup:', backup)
+PY

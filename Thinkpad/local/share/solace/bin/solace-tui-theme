@@ -1,0 +1,55 @@
+#!/bin/bash
+set -euo pipefail
+
+# solace:summary=Run a TUI with the current palette, preserving its personal config
+# solace:args=<command> [args...]
+
+(( $# )) || { echo 'Usage: solace-tui-theme <command> [args...]' >&2; exit 2; }
+app="$(basename "$1")"
+theme="$HOME/.config/solace/current/theme"
+case "$app" in
+  impala)
+    if [[ -f $theme/impala.toml ]]; then
+      runtime="$(mktemp -d "${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/solace-impala.XXXXXX")"
+      trap 'rm -rf -- "$runtime"' EXIT
+      mkdir -m 700 "$runtime/impala"
+      if python3 - "${XDG_CONFIG_HOME:-$HOME/.config}/impala/config.toml" "$theme/impala.toml" "$runtime/impala/config.toml" <<'PY'
+from pathlib import Path
+import re
+import sys
+import tomllib
+
+source, palette, output = map(Path, sys.argv[1:])
+text = source.read_text() if source.exists() else ''
+tomllib.loads(text)  # Reject invalid user data rather than discarding it.
+colors = palette.read_text()
+tomllib.loads(colors)
+# Replace only the theme table; preserve keybindings and all other settings.
+text = re.sub(r'^\[theme\][ \t]*(?:#[^\n]*)?(?:\n|\Z).*?(?=^\[|\Z)', '', text, flags=re.M | re.S)
+result = text.rstrip() + '\n\n' + colors
+tomllib.loads(result)
+output.write_text(result)
+PY
+      then
+        XDG_CONFIG_HOME="$runtime" "$@"
+      else
+        echo 'Preserving custom Impala configuration; palette overlay could not be merged.' >&2
+        "$@"
+      fi
+      exit "$?"
+    fi
+    ;;
+  bluetui)
+    # Bluetui 0.8 has fixed ANSI green UI accents, not a theme config API.
+    # Change that palette slot in THIS dedicated terminal only; retain warning
+    # and error colours. Restore the terminal palette when the app exits.
+    accent="$(sed -n 's/^accent[[:space:]]*=[[:space:]]*"\(#[a-fA-F0-9]\{6\}\)".*/\1/p' "$theme/colors.toml" 2>/dev/null || true)"
+    if [[ -t 1 && $accent =~ ^#[a-fA-F0-9]{6}$ ]]; then
+      printf '\033]4;2;%s\007\033]4;10;%s\007' "$accent" "$accent"
+      trap 'printf "\033]104;2\007\033]104;10\007"' EXIT
+      "$@"
+      exit "$?"
+    fi
+    ;;
+esac
+exec "$@"

@@ -11,7 +11,7 @@ Select optional groups with repeated `--with NAME`:
 | --- | --- |
 | `apps` | Music, notes, OBS, extra browsers, LocalSend, chat, file-manager integration |
 | `development` | VSCode binary, Zed, Docker package, Java and extra terminal tools |
-| `displaylink` | DKMS/evdi/DisplayLink; matching kernel headers required separately |
+| `displaylink` | DKMS/evdi/DisplayLink; known Arch kernel headers selected automatically, custom kernels require matching headers separately |
 | `security` | Selected Arch/AUR security/network tools; no BlackArch bootstrap |
 | `sdr` | SDR/decoder tools and serial/USB utilities |
 | `gaming` | Streaming, Wine and VR; GPU-specific/multilib prerequisites are separate |

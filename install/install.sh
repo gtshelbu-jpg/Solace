@@ -17,6 +17,7 @@ Usage: install.sh [options]
   --replace-configs         Back up and replace existing user configs (default: preserve)
   --boot-visuals            Opt in to boot/Plymouth changes (default: skip)
   --bash-prompt             Enable Starship in existing Bash config, with backup
+  --bash-defaults           Integrate shared Bash defaults before personal overrides
 
 Runs the numbered install scripts in $SCRIPT_DIR.
 EOF
@@ -29,6 +30,7 @@ export SOLACE_PACKAGE_GROUPS="${SOLACE_PACKAGE_GROUPS:-}"
 export SOLACE_REPLACE_CONFIGS=0
 export SOLACE_BOOT_VISUALS=0
 export SOLACE_BASH_PROMPT=0
+export SOLACE_BASH_DEFAULTS=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -38,6 +40,7 @@ while [[ $# -gt 0 ]]; do
     --replace-configs) SOLACE_REPLACE_CONFIGS=1; shift;;
     --boot-visuals) SOLACE_BOOT_VISUALS=1; shift;;
     --bash-prompt) SOLACE_BASH_PROMPT=1; shift;;
+    --bash-defaults) SOLACE_BASH_DEFAULTS=1; shift;;
     --lid-policy)
       [[ $# -ge 2 ]] || die "--lid-policy requires a value"
       SOLACE_LID_POLICY="$2"; shift 2;;

@@ -64,8 +64,11 @@ are retained, but launch successfully only when those apps are installed. Packag
 may ship their own service presets/hooks; Solace itself does not enable tool
 daemons, SSH, VPNs, Docker or discovery services just because a group is selected.
 
-For DisplayLink, install **headers matching your chosen installed kernel(s)**
-first. Do not substitute stock `linux-headers` for a Surface/LTS/custom kernel.
+For DisplayLink, the selected group installs matching headers for known Arch
+kernel families (`linux`, `linux-lts`, `linux-zen`, `linux-hardened`) when missing.
+Custom kernels still require their own matching headers first; stock headers are
+never substituted. After a kernel update, reboot may be needed before the driver
+can start for the running kernel. Confirm DKMS succeeded before that reboot.
 Secure Boot additionally requires an approved module-signing/trust policy; that
 is not configured by Solace. Avoid the group until those prerequisites are met.
 
@@ -93,6 +96,13 @@ is not configured by Solace. Avoid the group until those prerequisites are met.
 ```
 
 Other stages: `packages`, `services`, `login`, `boot`, `postinstall`.
+Stock Arch Bash startup is connected to Solace's shared aliases, functions,
+completions and Starship prompt, so `ls` uses eza when available. Customized or
+symlinked startup files are preserved by default. To explicitly integrate shared
+defaults before personal overrides, use `./install.sh --only configs --bash-defaults`
+or the installed `solace-setup-bash-defaults` helper. This does not change your login
+shell. Personal aliases remain after the shared source and take precedence.
+
 If an existing `.bashrc` was preserved and you want Solace's Starship prompt,
 opt in with `./install.sh --only configs --bash-prompt`. This backs up `.bashrc`
 and adds only guarded Starship initialization, without changing your login shell
@@ -100,6 +110,13 @@ or replacing aliases. Symlinked startup files require manual integration. New
 interactive Bash shells pick up the prompt; already-configured Solace Bash
 startup is left unchanged. The installed `solace-setup-bash-prompt` helper provides
 the same explicit operation without rerunning the configuration stage.
+
+btop's stock `Default` selection is connected to the generated `current` theme;
+other custom btop selections are preserved. New Impala configurations follow the
+current palette. Solace's TUI launch adapter can overlay Impala colours without
+replacing personal keybindings, and styles Bluetui's fixed ANSI accents in its
+own terminal. It does not claim Bluetui has a native theme API or modify radio
+connections/pairings. Reopen existing TUI windows after changing themes.
 
 The login stage installs SDDM/Solace, disables the known autologin drop-in, and
 enables graphical login. Inspect custom display-manager/autologin setups first.

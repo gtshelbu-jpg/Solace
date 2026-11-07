@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import tomllib
 import unittest
 
 
@@ -176,6 +177,110 @@ class InstallerTests(unittest.TestCase):
         self.log.write_text("")
         self.run_script("Thinkpad/local/share/solace/bin/solace-theme-set", "demo")
         self.assertIn("solace-theme-set-gnome --appearance-only", self.log.read_text())
+
+    def test_stock_bash_startup_gets_shared_defaults_without_duplicate_prompt(self):
+        shared = self.home / ".local/share/solace/default/bash/rc"
+        shared.parent.mkdir(parents=True)
+        shared.write_text("# Shared shell settings\n")
+        rc = self.home / ".bashrc"
+        rc.write_text("# Arch stock startup\n[[ $- != *i* ]] && return\nalias ls='ls --color=auto'\nalias grep='grep --color=auto'\n" + r"PS1='[\u@\h \W]\$ '" + "\n")
+        self.stub("starship", "exit 0\n")
+        self.run_script("config/scripts/solace-setup-bash-prompt")
+        self.run_script("config/scripts/solace-setup-bash-defaults", "--if-stock")
+        result = rc.read_text()
+        self.assertIn('source "$HOME/.local/share/solace/default/bash/rc"', result)
+        self.assertNotIn("alias ls='ls --color=auto'", result)
+        self.assertNotIn("starship init bash", result)
+        self.run_script("config/scripts/solace-setup-bash-defaults", "--if-stock")
+        self.assertEqual(rc.read_text(), result)
+
+    def test_custom_bash_startup_requires_explicit_defaults_integration(self):
+        shared = self.home / ".local/share/solace/default/bash/rc"
+        shared.parent.mkdir(parents=True)
+        shared.write_text("# Shared shell settings\n")
+        rc = self.home / ".bashrc"
+        rc.write_text("alias ls='my-personal-ls'\nexport MY_SETTING=kept\n")
+        original = rc.read_text()
+        self.run_script("config/scripts/solace-setup-bash-defaults", "--if-stock")
+        self.assertEqual(rc.read_text(), original)
+        self.run_script("config/scripts/solace-setup-bash-defaults")
+        self.assertTrue(rc.read_text().endswith(original))
+
+    def test_btop_stock_default_is_connected_but_custom_theme_is_preserved(self):
+        conf = self.home / ".config/btop/btop.conf"
+        conf.parent.mkdir(parents=True)
+        conf.write_text('color_theme = "Default"\nupdate_ms = 1200\n')
+        self.run_script("install/20-configs.sh")
+        self.assertEqual(conf.read_text(), 'color_theme = "current"\nupdate_ms = 1200\n')
+        conf.write_text('color_theme = "my-own-theme"\nupdate_ms = 1200\n')
+        self.run_script("install/20-configs.sh")
+        self.assertEqual(conf.read_text(), 'color_theme = "my-own-theme"\nupdate_ms = 1200\n')
+
+    def test_impala_palette_overlay_preserves_config_and_cleans_up(self):
+        theme = self.home / ".config/solace/current/theme"
+        theme.mkdir(parents=True)
+        (theme / "impala.toml").write_text('[theme]\nborder = "#b4a1e8"\nbackground = "#101017"\n')
+        user = self.home / ".config/impala/config.toml"
+        user.parent.mkdir(parents=True)
+        original = 'switch = "m"\n[theme] # my prior colors\nborder = "red"\n[station.known_network]\nremove = "x"\n'
+        user.write_text(original)
+        runtime = self.home / "runtime"
+        runtime.mkdir()
+        self.env["XDG_RUNTIME_DIR"] = str(runtime)
+        self.stub("impala", 'cat "$XDG_CONFIG_HOME/impala/config.toml"\n')
+        output = self.run_script("Thinkpad/local/share/solace/bin/solace-tui-theme", "impala")
+        actual = tomllib.loads(output)
+        self.assertEqual(actual["theme"]["border"], "#b4a1e8")
+        self.assertEqual(actual["switch"], "m")
+        self.assertEqual(actual["station"]["known_network"]["remove"], "x")
+        self.assertEqual(user.read_text(), original)
+        self.assertFalse(list(runtime.glob("solace-impala.*")))
+
+    def test_tui_adapter_passes_other_commands_without_invented_options(self):
+        self.stub("btop", 'printf "%s\\n" "$*"\n')
+        output = self.run_script("Thinkpad/local/share/solace/bin/solace-tui-theme", "btop", "--debug")
+        self.assertEqual(output.strip(), "--debug")
+
+    def test_bluetooth_adapter_non_tty_does_not_emit_escape_sequences(self):
+        theme = self.home / ".config/solace/current/theme"
+        theme.mkdir(parents=True)
+        (theme / "colors.toml").write_text('accent = "#b4a1e8"\n')
+        self.stub("bluetui", 'echo pass-through\n')
+        output = self.run_script("Thinkpad/local/share/solace/bin/solace-tui-theme", "bluetui")
+        self.assertEqual(output.strip(), "pass-through")
+
+    def test_welcome_lists_derivative_learn_pages_without_executing_them(self):
+        docs = self.home / "learn"
+        docs.mkdir()
+        (docs / "black.md").write_text('# Solace Black\n\nExample only: touch "$HOME/must-not-run"\n')
+        self.env["SOLACE_LEARN_DIR"] = str(docs)
+        result = subprocess.run(
+            ["bash", str(ASSETS / "bin/solace-welcome"), "--plain", "--display", "--force"],
+            env=self.env, input="\n", text=True, capture_output=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Additional topic: Solace Black", result.stdout)
+        self.assertFalse((self.home / "must-not-run").exists())
+
+    def test_tui_launch_keeps_app_identity_and_uses_palette_adapter(self):
+        self.assertTrue(os.access(ASSETS / "bin/solace-tui-theme", os.X_OK))
+        self.stub("setsid", 'exec "$@"\n')
+        self.stub("uwsm-app", 'shift\nexec "$@"\n')
+        self.stub("xdg-terminal-exec", 'printf "%s\\n" "$@" >> "$TEST_COMMAND_LOG"\n')
+        self.run_script("Thinkpad/local/share/solace/bin/solace-launch-tui", "impala", "--ascii")
+        args = self.log.read_text().splitlines()
+        self.assertEqual(args, ["--app-id=org.solace.impala", "-e", "solace-tui-theme", "impala", "--ascii"])
+
+    def test_displaylink_defers_start_if_running_kernel_has_no_built_module(self):
+        self.env["SOLACE_PACKAGE_GROUPS"] = "displaylink"
+        self.stub("systemctl", 'if [[ $1 == "list-unit-files" ]]; then echo "displaylink.service enabled"; fi\n')
+        self.stub("modinfo", 'exit 1\n')
+        output = self.run_script("install/31-displaylink.sh")
+        self.assertIn("Reboot into the installed kernel", output)
+        calls = self.log.read_text()
+        self.assertIn("sudo systemctl enable displaylink.service", calls)
+        self.assertNotIn("systemctl start", calls)
+        self.assertNotIn("sudo modprobe", calls)
 
     def test_default_dry_run_and_optional_groups(self):
         output = self.run_script("install.sh", "--dry-run", "--no-tablet")

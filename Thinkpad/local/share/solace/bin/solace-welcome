@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # solace:summary=Show the first-login Solace welcome guide.
 
@@ -11,6 +11,7 @@ DISPLAY_ONLY=0
 PLAIN=0
 SOLACE_HOME="${SOLACE_PATH:-$HOME/.local/share/solace}"
 DOCS_DIR="${SOLACE_DOCS_DIR:-$SOLACE_HOME/default/docs/welcome}"
+LEARN_DIR="${SOLACE_LEARN_DIR:-$SOLACE_HOME/learn}"
 LOGO_PATH="${SOLACE_LOGO_PATH:-}"
 
 for arg in "$@"; do
@@ -87,6 +88,16 @@ Learn
   Open Solace Menu > Learn > Solace to browse it from the desktop.
 
 EOF
+  for page in "$LEARN_DIR"/*.md; do
+    [[ -f $page ]] || continue
+    printf '  Additional topic: %s\n' "$(learn_label "$page")"
+  done
+}
+
+learn_label() {
+  local label
+  label="$(sed -n 's/^# //p' "$1" | head -n1)"
+  printf '%s\n' "${label:-$(basename "$1" .md)}"
 }
 
 theme_color() {
@@ -135,6 +146,14 @@ print_header() {
 }
 
 doc_path_for_label() {
+  local page
+  for page in "$LEARN_DIR"/*.md; do
+    [[ -f $page ]] || continue
+    if [[ $1 == "$(learn_label "$page")" ]]; then
+      printf '%s\n' "$page"
+      return 0
+    fi
+  done
   case "$1" in
     *Start*) printf '%s/start-here.md\n' "$DOCS_DIR" ;;
     *Keyboard*) printf '%s/keyboard.md\n' "$DOCS_DIR" ;;
@@ -165,7 +184,13 @@ show_doc() {
 
 show_gum() {
   local options choice
-  options=$'Start Here\nKeyboard And Navigation\nSystem Care\nApps And Defaults\nDisplays And Docks\nTroubleshooting\nClose'
+  local page
+  options=$'Start Here\nKeyboard And Navigation\nSystem Care\nApps And Defaults\nDisplays And Docks\nTroubleshooting'
+  for page in "$LEARN_DIR"/*.md; do
+    [[ -f $page ]] || continue
+    options+=$'\n'"$(learn_label "$page")"
+  done
+  options+=$'\nClose'
 
   while true; do
     clear 2>/dev/null || true

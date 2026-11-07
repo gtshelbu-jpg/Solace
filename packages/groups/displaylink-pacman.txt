@@ -1,2 +1,3 @@
-# Install headers matching your chosen kernel separately before selecting this group.
+# The installer selects matching headers for known Arch kernel families.
+# Custom kernels require their own matching headers; stock ones are never forced.
 dkms

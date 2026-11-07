@@ -441,10 +441,13 @@ seed_current_theme() {
 
   [[ -d $solace_theme && -f $theme_name ]] || die "Incomplete existing theme; repair ~/.config/solace/current before continuing."
 
-  mkdir -p "$CONFIG_HOME/btop/themes" "$CONFIG_HOME/mako" "$CONFIG_HOME/zed/themes"
+  mkdir -p "$CONFIG_HOME/btop/themes" "$CONFIG_HOME/mako" "$CONFIG_HOME/zed/themes" "$CONFIG_HOME/impala"
   safe_link "$solace_theme/btop.theme" "$CONFIG_HOME/btop/themes/current.theme"
   safe_link "$solace_theme/mako.ini" "$CONFIG_HOME/mako/config"
   safe_link "$solace_theme/aether.zed.json" "$CONFIG_HOME/zed/themes/aether.json"
+  if [[ -f $solace_theme/impala.toml ]]; then
+    safe_link "$solace_theme/impala.toml" "$CONFIG_HOME/impala/config.toml"
+  fi
 }
 
 install_snapshot_config
@@ -456,9 +459,23 @@ sanitize_installed_hypr_defaults
 remove_storage_shell_helpers
 seed_hypr_toggle_state
 seed_current_theme
+if [[ $DRY_RUN -eq 1 ]]; then
+  log "DRY: would connect btop's stock Default selection to the current theme, preserving custom selections"
+elif [[ -f $CONFIG_HOME/btop/btop.conf && ! -L $CONFIG_HOME/btop/btop.conf ]] &&
+     grep -Eq '^color_theme[[:space:]]*=[[:space:]]*"Default"[[:space:]]*$' "$CONFIG_HOME/btop/btop.conf"; then
+  backup_target "$CONFIG_HOME/btop/btop.conf"
+  sed -i 's/^color_theme[[:space:]]*=[[:space:]]*"Default"[[:space:]]*$/color_theme = "current"/' "$CONFIG_HOME/btop/btop.conf"
+fi
 seed_desktop_background
 install_script_helpers
 seed_shell_startup
+if [[ $DRY_RUN -eq 1 ]]; then
+  log "DRY: would integrate shared Bash defaults for stock Arch startup only (or explicitly with --bash-defaults)"
+else
+  bash_defaults_args=(--if-stock)
+  [[ ${SOLACE_BASH_DEFAULTS:-0} == "1" ]] && bash_defaults_args=()
+  run_cmd bash "$CONFIG_ROOT/scripts/solace-setup-bash-defaults" "${bash_defaults_args[@]}"
+fi
 if [[ ${SOLACE_BASH_PROMPT:-0} == "1" ]]; then
   if [[ $DRY_RUN -eq 1 ]]; then
     log "DRY: would back up .bashrc and enable Starship without changing shells"
