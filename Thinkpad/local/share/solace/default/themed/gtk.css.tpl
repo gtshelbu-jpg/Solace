@@ -239,6 +239,45 @@ togglebutton {
     color: @foreground;
 }
 
+/* GTK3's Adwaita buttons carry a light background-image even when its named
+ * colors are overridden. Set the complete background, not just the text color,
+ * so calculator keypads and other legacy controls remain readable. */
+button {
+    background: mix(@background, @foreground, 0.08);
+    border-color: alpha(@foreground, 0.12);
+    box-shadow: none;
+    text-shadow: none;
+}
+
+button:hover {
+    background: mix(@background, @foreground, 0.15);
+}
+
+button:active,
+button:checked {
+    background: @blue;
+    color: @background;
+}
+
+button:disabled {
+    background: mix(@background, @foreground, 0.03);
+    color: @bright_black;
+}
+
+button.flat {
+    background: transparent;
+}
+
+button.flat:hover {
+    background: alpha(@foreground, 0.08);
+}
+
+/* Legacy GtkMenuBar also keeps an opaque light strip outside its menu items. */
+menubar {
+    background: @background;
+    color: @foreground;
+}
+
 columnview header,
 columnviewheader,
 columnviewcolumn,

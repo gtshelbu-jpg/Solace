@@ -90,6 +90,10 @@ class InstallerTests(unittest.TestCase):
         for name in ("gum.env.conf", "gum.env.lua", "hyprland.lua", "gtk.css", "hyprlock.conf", "neovim.lua"):
             self.assertTrue((current / "theme" / name).is_file(), name)
         self.assertNotIn("{{ ", (current / "theme/gtk.css").read_text())
+        gtk_css = (current / "theme/gtk.css").read_text()
+        self.assertIn("background: mix(@background, @foreground, 0.08)", gtk_css)
+        self.assertIn("button:disabled", gtk_css)
+        self.assertIn("text-shadow: none", gtk_css)
         for blueprint in (config / "aether/blueprints").glob("*.json"):
             data = blueprint.read_text()
             self.assertNotIn("@HOME@", data)

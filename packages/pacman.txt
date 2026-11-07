@@ -52,6 +52,8 @@ uwsm
 sddm
 polkit-gnome
 power-profiles-daemon
+# powerprofilesctl imports gi.repository; this is optional to the daemon package.
+python-gobject
 qt5-base
 qt5-declarative
 qt5-wayland
