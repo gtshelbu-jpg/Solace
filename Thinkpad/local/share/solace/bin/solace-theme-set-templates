@@ -21,6 +21,7 @@ if [[ -f $COLORS_FILE ]]; then
   while IFS='=' read -r key value; do
     key="${key//[\"\' ]/}"                # strip quotes and spaces from key
     [[ $key && $key != \#* ]] || continue # skip empty lines and comments
+    [[ $key != "impala_selection_background" ]] || continue # always recompute derived fill
     value="${value#*[\"\']}"
     value="${value%%[\"\']*}" # extract value between quotes (ignores inline comments)
 
@@ -31,6 +32,12 @@ if [[ -f $COLORS_FILE ]]; then
       echo "s|{{ ${key}_rgb }}|${rgb}|g"
     fi
   done <"$COLORS_FILE" >"$sed_script"
+
+  impala_selection=$(python3 "$TEMPLATES_DIR/impala-selection.py" "$COLORS_FILE") || {
+    rm "$sed_script"
+    exit 1
+  }
+  printf 's|{{ impala_selection_background }}|%s|g\n' "$impala_selection" >>"$sed_script"
 
   shopt -s nullglob
 

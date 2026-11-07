@@ -236,6 +236,16 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(user.read_text(), original)
         self.assertFalse(list(runtime.glob("solace-impala.*")))
 
+    def test_impala_selection_template_recomputes_cached_derived_color(self):
+        folder = self.home / ".config/solace/current/next-theme"
+        folder.mkdir(parents=True)
+        (folder / "colors.toml").write_text('background = "#101017"\nforeground = "#dddde7"\naccent = "#b4a1e8"\nimpala_selection_background = "#101017"\n')
+        self.env["SOLACE_PATH"] = str(ASSETS)
+        self.run_script("Thinkpad/local/share/solace/bin/solace-theme-set-templates")
+        result = tomllib.loads((folder / "impala.toml").read_text())
+        self.assertNotEqual(result["theme"]["background"], "#101017")
+        self.assertEqual(result["theme"]["text_color"], "#dddde7")
+
     def test_tui_adapter_passes_other_commands_without_invented_options(self):
         self.stub("btop", 'printf "%s\\n" "$*"\n')
         output = self.run_script("Thinkpad/local/share/solace/bin/solace-tui-theme", "btop", "--debug")
