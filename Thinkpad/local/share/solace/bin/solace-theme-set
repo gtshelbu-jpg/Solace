@@ -4,8 +4,14 @@
 # solace:args=<theme-name>
 # solace:examples=solace theme list | solace theme set "Tokyo Night"
 
-if [[ -z $1 ]]; then
-  echo "Usage: solace-theme-set <theme-name>"
+APPEARANCE_ONLY=0
+if [[ ${1:-} == "--appearance-only" ]]; then
+  APPEARANCE_ONLY=1
+  shift
+fi
+
+if [[ -z ${1:-} ]]; then
+  echo "Usage: solace-theme-set [--appearance-only] <theme-name>"
   exit 1
 fi
 
@@ -15,6 +21,10 @@ USER_THEMES_PATH="$HOME/.config/solace/themes"
 SOLACE_THEMES_PATH="$SOLACE_PATH/themes"
 
 THEME_NAME=$(echo "$1" | sed -E 's/<[^>]+>//g' | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+
+if [[ -f $USER_THEMES_PATH/$THEME_NAME/appearance-only || -f $SOLACE_THEMES_PATH/$THEME_NAME/appearance-only ]]; then
+  APPEARANCE_ONLY=1
+fi
 
 if [[ "$THEME_NAME" == "aether" ]]; then
   exec solace-aether-sync
@@ -71,6 +81,12 @@ solace-restart-helix
 
 # Change app-specific themes
 solace-theme-set-foot
+if (( APPEARANCE_ONLY )); then
+  # Palette and CSS only: never reset file-manager preferences, install editor
+  # extensions or invoke privileged peripheral/browser integrations for a preview.
+  solace-theme-set-gnome --appearance-only
+  exit 0
+fi
 solace-theme-set-gnome
 if sudo -n true >/dev/null 2>&1; then
   solace-theme-set-browser

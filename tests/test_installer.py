@@ -86,7 +86,7 @@ class InstallerTests(unittest.TestCase):
         self.assertFalse((current / "theme").is_symlink())
         self.assertEqual((current / "background").resolve().name, "wallhaven-nmmvvk.jpg")
         self.assertFalse(os.readlink(current / "background").startswith("/"))
-        for name in ("gum.env.conf", "gtk.css", "hyprlock.conf", "neovim.lua"):
+        for name in ("gum.env.conf", "gum.env.lua", "hyprland.lua", "gtk.css", "hyprlock.conf", "neovim.lua"):
             self.assertTrue((current / "theme" / name).is_file(), name)
         self.assertNotIn("{{ ", (current / "theme/gtk.css").read_text())
         for blueprint in (config / "aether/blueprints").glob("*.json"):
@@ -153,6 +153,29 @@ class InstallerTests(unittest.TestCase):
         output = self.run_script("install.sh", "--dry-run", "--only", "configs", "--bash-prompt")
         self.assertIn("would back up .bashrc and enable Starship", output)
         self.assertFalse(any(self.home.iterdir()))
+
+    def test_theme_appearance_only_avoids_privileged_and_preference_integrations(self):
+        share = self.home / ".local/share/solace"
+        theme = share / "themes/demo"
+        theme.mkdir(parents=True)
+        (theme / "colors.toml").write_text('background = "#101017"\n')
+        (self.home / ".config/solace/current").mkdir(parents=True)
+        self.env["SOLACE_PATH"] = str(share)
+        for name in ("solace-theme-set-templates", "solace-theme-bg-next", "solace-restart-swayosd",
+                     "solace-restart-terminal", "solace-restart-hyprctl", "solace-restart-btop",
+                     "solace-restart-opencode", "solace-restart-mako", "solace-restart-helix",
+                     "solace-theme-set-foot", "solace-theme-set-gnome"):
+            self.stub(name, 'echo "' + name + ' $*" >> "$TEST_COMMAND_LOG"\n')
+        self.stub("pgrep", 'exit 1\n')
+        self.run_script("Thinkpad/local/share/solace/bin/solace-theme-set", "--appearance-only", "demo")
+        calls = self.log.read_text()
+        self.assertIn("solace-theme-set-gnome --appearance-only", calls)
+        self.assertNotIn("sudo", calls)
+        self.assertEqual((self.home / ".config/solace/current/theme.name").read_text(), "demo\n")
+        (theme / "appearance-only").write_text("Preserve application preferences\n")
+        self.log.write_text("")
+        self.run_script("Thinkpad/local/share/solace/bin/solace-theme-set", "demo")
+        self.assertIn("solace-theme-set-gnome --appearance-only", self.log.read_text())
 
     def test_default_dry_run_and_optional_groups(self):
         output = self.run_script("install.sh", "--dry-run", "--no-tablet")
