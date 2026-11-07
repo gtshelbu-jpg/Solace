@@ -459,6 +459,13 @@ seed_current_theme
 seed_desktop_background
 install_script_helpers
 seed_shell_startup
+if [[ ${SOLACE_BASH_PROMPT:-0} == "1" ]]; then
+  if [[ $DRY_RUN -eq 1 ]]; then
+    log "DRY: would back up .bashrc and enable Starship without changing shells"
+  else
+    run_cmd bash "$CONFIG_ROOT/scripts/solace-setup-bash-prompt"
+  fi
+fi
 
 log "Configs installed (or simulated in dry-run)"
 log "Installed Thinkpad-derived Solace UX config with hardware, mirror, and bootloader pieces filtered."

@@ -93,6 +93,14 @@ is not configured by Solace. Avoid the group until those prerequisites are met.
 ```
 
 Other stages: `packages`, `services`, `login`, `boot`, `postinstall`.
+If an existing `.bashrc` was preserved and you want Solace's Starship prompt,
+opt in with `./install.sh --only configs --bash-prompt`. This backs up `.bashrc`
+and adds only guarded Starship initialization, without changing your login shell
+or replacing aliases. Symlinked startup files require manual integration. New
+interactive Bash shells pick up the prompt; already-configured Solace Bash
+startup is left unchanged. The installed `solace-setup-bash-prompt` helper provides
+the same explicit operation without rerunning the configuration stage.
+
 The login stage installs SDDM/Solace, disables the known autologin drop-in, and
 enables graphical login. Inspect custom display-manager/autologin setups first.
 

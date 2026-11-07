@@ -129,6 +129,31 @@ class InstallerTests(unittest.TestCase):
         self.assertTrue(any(p.read_text() == "# a user's custom input settings\n" for p in backups))
         self.assertEqual(keyring.read_text(), "test credential marker\n")
 
+    def test_bash_prompt_opt_in_preserves_customizations_and_is_idempotent(self):
+        rc = self.home / ".bashrc"
+        original = "# Personal aliases\nalias ll='ls -l'\n"
+        rc.write_text(original)
+        self.stub("starship", "exit 0\n")
+        self.run_script("config/scripts/solace-setup-bash-prompt")
+        content = rc.read_text()
+        self.assertTrue(content.startswith(original))
+        self.assertIn('eval "$(starship init bash)"', content)
+        self.assertTrue(any(p.read_text() == original for p in (self.home / ".config-backups").glob("*/.bashrc")))
+        self.run_script("config/scripts/solace-setup-bash-prompt")
+        self.assertEqual(rc.read_text(), content)
+
+    def test_bash_prompt_preserves_symlinked_startup(self):
+        target = self.home / "my-bashrc"
+        target.write_text("# Personal shell config\n")
+        (self.home / ".bashrc").symlink_to(target)
+        self.run_script("config/scripts/solace-setup-bash-prompt", success=False)
+        self.assertEqual(target.read_text(), "# Personal shell config\n")
+
+    def test_bash_prompt_installer_dry_run_is_write_free(self):
+        output = self.run_script("install.sh", "--dry-run", "--only", "configs", "--bash-prompt")
+        self.assertIn("would back up .bashrc and enable Starship", output)
+        self.assertFalse(any(self.home.iterdir()))
+
     def test_default_dry_run_and_optional_groups(self):
         output = self.run_script("install.sh", "--dry-run", "--no-tablet")
         self.assertIn("Skipping boot changes", output)

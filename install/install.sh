@@ -16,6 +16,7 @@ Usage: install.sh [options]
   --tablet | --no-tablet     Optional drawing tablet support
   --replace-configs         Back up and replace existing user configs (default: preserve)
   --boot-visuals            Opt in to boot/Plymouth changes (default: skip)
+  --bash-prompt             Enable Starship in existing Bash config, with backup
 
 Runs the numbered install scripts in $SCRIPT_DIR.
 EOF
@@ -27,6 +28,7 @@ export SOLACE_LID_POLICY="${SOLACE_LID_POLICY:-}"
 export SOLACE_PACKAGE_GROUPS="${SOLACE_PACKAGE_GROUPS:-}"
 export SOLACE_REPLACE_CONFIGS=0
 export SOLACE_BOOT_VISUALS=0
+export SOLACE_BASH_PROMPT=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -35,6 +37,7 @@ while [[ $# -gt 0 ]]; do
     --no-tablet) TABLET_CHOICE=0; shift;;
     --replace-configs) SOLACE_REPLACE_CONFIGS=1; shift;;
     --boot-visuals) SOLACE_BOOT_VISUALS=1; shift;;
+    --bash-prompt) SOLACE_BASH_PROMPT=1; shift;;
     --lid-policy)
       [[ $# -ge 2 ]] || die "--lid-policy requires a value"
       SOLACE_LID_POLICY="$2"; shift 2;;

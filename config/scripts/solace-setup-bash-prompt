@@ -1,0 +1,35 @@
+#!/bin/bash
+set -euo pipefail
+
+# Explicit opt-in: keep the existing shell, aliases and startup configuration.
+rc="$HOME/.bashrc"
+[[ ! -L $rc ]] || { echo 'Preserving symlinked .bashrc; enable Starship in its source manually.' >&2; exit 1; }
+command -v starship >/dev/null 2>&1 || { echo 'Install Starship before enabling the Bash prompt.' >&2; exit 1; }
+if [[ -f $rc ]] && grep -Eq 'starship init bash|^[[:space:]]*(source|\.)[[:space:]]+.*solace/default/bash/rc' "$rc"; then
+  echo 'Bash prompt integration is already configured; preserving .bashrc.'
+  exit 0
+fi
+
+umask 077
+backup_dir="${BACKUP_DIR:-$HOME/.config-backups/solace-bash-prompt-$(date +%Y%m%d-%H%M%S)-$$}"
+mkdir -p "$backup_dir"
+if [[ -e $rc ]]; then
+  [[ -f $rc ]] || { echo '.bashrc is not a regular file; preserving it.' >&2; exit 1; }
+  [[ ! -e $backup_dir/.bashrc ]] || { echo 'Backup already exists; refusing to overwrite it.' >&2; exit 1; }
+  cp -p -- "$rc" "$backup_dir/.bashrc"
+fi
+temp="$(mktemp "$HOME/.bashrc.solace.XXXXXX")"
+trap 'rm -f -- "$temp"' EXIT
+if [[ -f $rc ]]; then
+  cp -p -- "$rc" "$temp"
+fi
+cat >> "$temp" <<'EOF'
+
+# Solace Starship prompt: enabled explicitly; existing Bash settings stay above.
+if [[ $- == *i* && ${TERM:-} != "dumb" ]] && command -v starship >/dev/null 2>&1; then
+  eval "$(starship init bash)"
+fi
+EOF
+bash -n "$temp"
+mv -- "$temp" "$rc"
+echo 'Starship enabled for new interactive Bash shells. Existing settings were preserved.'
