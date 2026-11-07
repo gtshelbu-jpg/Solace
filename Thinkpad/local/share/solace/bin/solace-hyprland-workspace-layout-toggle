@@ -1,14 +1,35 @@
 #!/bin/bash
 
 # solace:summary=Toggle the layout on the current active workspace between dwindle and scrolling
+# solace:args=[--dry-run]
 
-ACTIVE_WORKSPACE=$(hyprctl activeworkspace -j | jq -r '.id')
-CURRENT_LAYOUT=$(hyprctl activeworkspace -j | jq -r '.tiledLayout')
+set -euo pipefail
+DRY_RUN=0
+if (( $# )); then
+  (( $# == 1 )) && [[ $1 == "--dry-run" ]] || { echo 'Usage: solace-hyprland-workspace-layout-toggle [--dry-run]' >&2; exit 2; }
+  DRY_RUN=1
+fi
+WORKSPACE=$(hyprctl activeworkspace -j)
+ACTIVE_WORKSPACE=$(jq -er '.id | select(type == "number" and floor == .)' <<< "$WORKSPACE")
+CURRENT_LAYOUT=$(jq -r '.tiledLayout // .tiled_layout // "dwindle"' <<< "$WORKSPACE")
+[[ $ACTIVE_WORKSPACE =~ ^-?[0-9]+$ ]] || { echo 'Invalid workspace ID' >&2; exit 1; }
 
 case "$CURRENT_LAYOUT" in
   dwindle) NEW_LAYOUT=scrolling ;;
   *) NEW_LAYOUT=dwindle ;;
 esac
 
-hyprctl keyword workspace $ACTIVE_WORKSPACE, layout:$NEW_LAYOUT
+if [[ $(hyprctl repl 'return type(hl.workspace_rule)' 2>/dev/null || true) == "function" ]]; then
+  # Only a validated integer and a fixed layout enum enter this Lua expression.
+  printf -v CODE 'hl.workspace_rule({workspace = "%s", layout = "%s"})' "$ACTIVE_WORKSPACE" "$NEW_LAYOUT"
+  COMMAND=(hyprctl eval "$CODE")
+else
+  COMMAND=(hyprctl keyword workspace "$ACTIVE_WORKSPACE, layout:$NEW_LAYOUT")
+fi
+if (( DRY_RUN )); then
+  printf '%q ' "${COMMAND[@]}"
+  printf '\n'
+  exit 0
+fi
+"${COMMAND[@]}"
 notify-send -u low "󱂬    Workspace layout set to $NEW_LAYOUT"
