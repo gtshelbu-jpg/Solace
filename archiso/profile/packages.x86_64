@@ -68,6 +68,8 @@ mdadm
 memtest86+
 memtest86+-efi
 mkinitcpio
+# Inspect target UKI .initrd sections before allowing the first encrypted reboot.
+binutils
 mkinitcpio-archiso
 mkinitcpio-nfs-utils
 mmc-utils

@@ -5,6 +5,9 @@ Solace is a personal Arch Linux + Hyprland bootstrap/configuration repo.
 The project tracks the parts of my preferred clean Hyprland workflow without tying the setup to a specific distro overlay or third-party mirrors. Solace configures a normal upstream Arch install into a Hyprland workstation environment.
 
 For ISO testing and alpha release installs, read the [Solace Alpha Install Guide](docs/ALPHA_INSTALL.md).
+For LUKS and Secure Boot, read the [pre-reboot preparation guide](docs/ENCRYPTED_INSTALL.md)
+before installing. Fresh homes receive verified modular native Hyprland Lua;
+existing homes are preserved, not automatically migrated.
 
 ## Screenshots
 

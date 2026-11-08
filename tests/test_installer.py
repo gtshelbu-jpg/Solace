@@ -39,7 +39,7 @@ class InstallerTests(unittest.TestCase):
             SOLACE_INSTALL_TABLET_SUPPORT="0",
             TEST_COMMAND_LOG=str(self.log),
         )
-        for command in ("sudo", "systemctl", "fc-cache"):
+        for command in ("sudo", "systemctl", "fc-cache", "Hyprland"):
             self.stub(command, 'printf "%s\\n" "' + command + ' $*" >> "$TEST_COMMAND_LOG"\n')
 
     def stub(self, name, body):
@@ -68,6 +68,21 @@ class InstallerTests(unittest.TestCase):
         self.assertIn("No signature policy was changed", output)
         self.assertFalse(self.log.exists())
 
+    def test_existing_hyprland_home_is_not_automatically_migrated(self):
+        hypr = self.home / ".config/hypr"
+        hypr.mkdir(parents=True)
+        (hypr / "hyprland.conf").write_text("# personal compositor configuration\n")
+        self.run_script("install/20-configs.sh")
+        self.assertFalse((hypr / "hyprland.lua").exists())
+        self.assertEqual((hypr / "hyprland.conf").read_text(), "# personal compositor configuration\n")
+
+    def test_failed_native_validation_blocks_subsequent_setup(self):
+        self.stub("Hyprland", "exit 19\n")
+        self.run_script("install/20-configs.sh", success=False)
+        self.assertTrue((self.home / ".local/state/solace/native-defaults.pending").exists())
+        output = self.run_script("install/20-configs.sh", success=False)
+        self.assertIn("previous native Hyprland validation", output)
+
     def test_optional_local_package_policy_reaches_package_stage(self):
         self.stub("pacman-conf", 'echo "PackageOptional PackageTrustedOnly"\n')
         self.stub("sudo", 'echo "package-stage-reached"; exit 91\n')
@@ -90,6 +105,8 @@ class InstallerTests(unittest.TestCase):
         for name in ("gum.env.conf", "gum.env.lua", "hyprland.lua", "gtk.css", "hyprlock.conf", "neovim.lua"):
             self.assertTrue((current / "theme" / name).is_file(), name)
         self.assertNotIn("{{ ", (current / "theme/gtk.css").read_text())
+        self.assertTrue((config / "hypr/hyprland.lua").is_file())
+        self.assertIn('os.getenv("HOME")', (config / "hypr/hyprland.lua").read_text())
         gtk_css = (current / "theme/gtk.css").read_text()
         self.assertIn("background: mix(@background, @foreground, 0.08)", gtk_css)
         self.assertIn("button:disabled", gtk_css)

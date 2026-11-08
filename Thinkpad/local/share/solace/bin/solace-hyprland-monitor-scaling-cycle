@@ -32,12 +32,30 @@ fi
 
 NEW_SCALE=${SCALES[$NEW_IDX]}
 
-hyprctl keyword monitor "$ACTIVE_MONITOR,${WIDTH}x${HEIGHT}@${REFRESH_RATE},auto,$NEW_SCALE"
+if [[ -f $HOME/.config/hypr/hyprland.lua ]]; then
+  monitor_quoted=$(jq -rn --arg value "$ACTIVE_MONITOR" '$value | @json')
+  hyprctl eval "hl.monitor({output = $monitor_quoted, mode = \"${WIDTH}x${HEIGHT}@${REFRESH_RATE}\", position = \"auto\", scale = \"$NEW_SCALE\"})" || exit 1
+  # Persist only the reviewed one-rule generic layout, not custom dock rules.
+  python3 - "$HOME/.config/hypr/monitors.lua" "$NEW_SCALE" <<'PY'
+from pathlib import Path
+import re
+import sys
+p = Path(sys.argv[1])
+if p.is_file():
+    body = p.read_text()
+    code = re.sub(r"--[^\n]*", "", body).strip()
+    pattern = r'hl\.monitor\(\{\s*output\s*=\s*"",\s*mode\s*=\s*"preferred",\s*position\s*=\s*"auto",\s*scale\s*=\s*"[0-9.]+",?\s*\}\)'
+    if re.fullmatch(pattern, code):
+        p.write_text(re.sub(r'(scale\s*=\s*)"[0-9.]+"', lambda m: m[1] + '"' + sys.argv[2] + '"', body, count=1))
+PY
+else
+  hyprctl keyword monitor "$ACTIVE_MONITOR,${WIDTH}x${HEIGHT}@${REFRESH_RATE},auto,$NEW_SCALE" || exit 1
+fi
 
 # Persist to monitors.conf if the user has a single generic catch-all line
 # (ignoring disabled monitors), so the scale survives reboots.
 MONITOR_CONF="$HOME/.config/hypr/monitors.conf"
-if [[ -f $MONITOR_CONF ]]; then
+if [[ ! -f $HOME/.config/hypr/hyprland.lua && -f $MONITOR_CONF ]]; then
   mapfile -t ACTIVE_LINES < <(grep -E '^[[:space:]]*monitor=' "$MONITOR_CONF" | grep -vE 'disable[[:space:]]*$')
   if [[ ${#ACTIVE_LINES[@]} -eq 1 ]] && [[ "${ACTIVE_LINES[0]}" =~ ^monitor=,preferred,auto, ]]; then
     sed -i -E "s|^(monitor=,preferred,auto,).*|\\1${NEW_SCALE}|" "$MONITOR_CONF"

@@ -56,6 +56,12 @@ open_in_editor() {
   solace-launch-editor "$1"
 }
 
+hypr_config_file() {
+  local extension=conf
+  [[ ! -f $HOME/.config/hypr/hyprland.lua ]] || extension=lua
+  printf '%s/.config/hypr/%s.%s\n' "$HOME" "$1" "$extension"
+}
+
 install() {
   present_terminal "echo 'Installing $1...'; solace-pkg-add $2"
 }
@@ -267,7 +273,7 @@ show_style_menu() {
   *Theme*) show_theme_menu show_style_menu ;;
   *Font*) show_font_menu ;;
   *Background*) show_background_menu ;;
-  *Hyprland*) open_in_editor ~/.config/hypr/looknfeel.conf ;;
+  *Hyprland*) open_in_editor "$(hypr_config_file looknfeel)" ;;
   *About*) show_about_menu ;;
   *) show_main_menu ;;
   esac
@@ -313,8 +319,8 @@ show_font_menu() {
 
 show_setup_menu() {
   local options="  Audio\n  Wifi\n󰂯  Bluetooth\n󱐋  Power Profile\n  System Sleep\n󰍹  Monitors"
-  [[ -f ~/.config/hypr/bindings.conf ]] && options="$options\n  Keybindings"
-  [[ -f ~/.config/hypr/input.conf ]] && options="$options\n  Input"
+  [[ -f $(hypr_config_file bindings) ]] && options="$options\n  Keybindings"
+  [[ -f $(hypr_config_file input) ]] && options="$options\n  Input"
   options="$options\n  Defaults\n󰱔  DNS\n  Security\n  Config"
 
   case $(menu "Setup" "$options") in
@@ -323,9 +329,9 @@ show_setup_menu() {
   *Bluetooth*) solace-launch-bluetooth ;;
   *Power*) show_setup_power_menu ;;
   *System*) show_setup_system_menu ;;
-  *Monitors*) open_in_editor ~/.config/hypr/monitors.conf ;;
-  *Keybindings*) open_in_editor ~/.config/hypr/bindings.conf ;;
-  *Input*) open_in_editor ~/.config/hypr/input.conf ;;
+  *Monitors*) open_in_editor "$(hypr_config_file monitors)" ;;
+  *Keybindings*) open_in_editor "$(hypr_config_file bindings)" ;;
+  *Input*) open_in_editor "$(hypr_config_file input)" ;;
   *Defaults*) show_setup_default_menu ;;
   *DNS*) present_terminal solace-setup-dns ;;
   *Security*) show_setup_security_menu ;;
@@ -460,7 +466,7 @@ show_setup_default_editor_menu() {
 
 show_setup_config_menu() {
   case $(menu "Setup" "  Hyprland\n  Hypridle\n  Hyprlock\n  Hyprsunset\n  Swayosd\n󰌧  Walker\n󰍜  Waybar\n󰞅  XCompose") in
-  *Hyprland*) open_in_editor ~/.config/hypr/hyprland.conf ;;
+  *Hyprland*) open_in_editor "$(hypr_config_file hyprland)" ;;
   *Hypridle*) open_in_editor ~/.config/hypr/hypridle.conf && solace-restart-hypridle ;;
   *Hyprlock*) open_in_editor ~/.config/hypr/hyprlock.conf ;;
   *Hyprsunset*) open_in_editor ~/.config/hypr/hyprsunset.conf && solace-restart-hyprsunset ;;

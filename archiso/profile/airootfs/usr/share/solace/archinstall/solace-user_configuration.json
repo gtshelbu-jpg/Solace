@@ -1,10 +1,11 @@
 {
   "script": "guided",
   "bootloader_config": {
-    "bootloader": "Limine",
+    "bootloader": "Systemd-boot",
     "uki": true,
-    "removable": true
+    "removable": false
   },
+  "packages": ["sbctl", "sbsigntools", "python"],
   "network_config": {
     "type": "iso"
   },

@@ -147,6 +147,7 @@ show_install_guide() {
   note "6. Complete archinstall. When it asks what to do next, choose 'Exit archinstall'."
   note "7. Solace will be staged automatically for first login."
   note "8. Reboot, remove the USB stick, log in, and accept the Solace post-install prompt."
+  note "Encrypted/Secure Boot order and recovery: /opt/solace/docs/ENCRYPTED_INSTALL.md"
   printf '\n'
   pause
 }
@@ -262,6 +263,9 @@ EOF
 stage_solace_target() {
   require_target_mount
   copy_or_clone_solace
+  # Hardware needed to type the LUKS passphrase cannot wait for first login.
+  # Failure deliberately stops staging/reboot; leave the target mounted to repair.
+  python3 "$TARGET/opt/solace/scripts/prepare-early-boot.py" --target "$TARGET" --apply
   fix_staged_solace_permissions
   install_first_login_prompt
   if [[ -f /usr/share/solace/variant-stage-target ]]; then
@@ -297,7 +301,7 @@ run_archinstall() {
   demo_notice
   say "Install Arch with Solace defaults"
   note "This launches archinstall with Solace-compatible defaults:"
-  note "  - bootloader: Limine"
+  note "  - bootloader: systemd-boot with a unified kernel image"
   note "  - audio: PipeWire"
   note "  - firewall: UFW"
   note "  - network: copy the ISO network stack (iwd/systemd-networkd)"
@@ -306,6 +310,8 @@ run_archinstall() {
   note "After archinstall completes, Solace will be staged into the installed system."
   note "When archinstall asks what to do next, choose 'Exit archinstall'."
   note "The actual Solace desktop bootstrap runs after you reboot and log in."
+  note "Early keyboard support is rebuilt and inspected BEFORE the first reboot."
+  note "For encrypted installs, select LUKS in archinstall. Keep Secure Boot disabled until target EFI files are signed and verified."
   printf '\n'
   if [[ "$DEMO" == "1" ]]; then
     note "Would launch: archinstall --config $ARCHINSTALL_CONFIG"
@@ -322,9 +328,13 @@ run_archinstall() {
   printf '\n'
   if mountpoint -q "$TARGET" && [[ -d "$TARGET/etc" ]]; then
     stage_solace_target
+    if confirm "Prepare target-owned Secure Boot keys and sign/verify EFI files? This does NOT enroll firmware keys."; then
+      arch-chroot "$TARGET" python3 /opt/solace/scripts/prepare-secure-boot.py --apply
+      note "EFI files signed. Keep Secure Boot disabled until you review the installed Secure Boot guide and enroll keys yourself."
+    fi
     printf '\n'
     say "Arch install is complete and Solace is staged for first login."
-    note "Reboot now, remove the install medium, log in, and accept the Solace post-install prompt."
+    note "With Secure Boot still disabled: reboot, remove the medium, log in, and accept the Solace post-install prompt."
     printf '\n'
     if confirm "Reboot now?"; then
       systemctl reboot
@@ -360,12 +370,12 @@ main() {
     printf '\n'
 
     local selection
-    selection="$(choose \
-      "Install guide" \
-      "Install Arch with Solace defaults" \
-      "Stage Solace into mounted target" \
-      "Launch experimental Calamares" \
-      "Open shell")"
+    local choices=("Install guide" "Install Arch with Solace defaults" "Stage Solace into mounted target")
+    if command -v calamares >/dev/null 2>&1; then
+      choices+=("Launch experimental Calamares")
+    fi
+    choices+=("Open shell")
+    selection="$(choose "${choices[@]}")"
 
     case "$selection" in
       "Install guide") show_install_guide ;;

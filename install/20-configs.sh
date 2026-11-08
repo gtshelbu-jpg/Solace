@@ -21,6 +21,13 @@ LOCAL_AETHER_SHARE_HOME="$HOME/.local/share/aether"
 LOCAL_APPLICATIONS_HOME="$HOME/.local/share/applications"
 BIN_HOME="$HOME/.local/bin"
 FONT_HOME="$HOME/.local/share/fonts"
+HYPR_NATIVE_FRESH=0
+if [[ -e $HOME/.local/state/solace/native-defaults.pending ]]; then
+  die "A previous native Hyprland validation is incomplete; review retained modules before continuing."
+fi
+if [[ ! -e $CONFIG_HOME/hypr && ! -L $CONFIG_HOME/hypr ]]; then
+  HYPR_NATIVE_FRESH=1
+fi
 
 shopt -s nullglob
 
@@ -482,6 +489,16 @@ if [[ ${SOLACE_BASH_PROMPT:-0} == "1" ]]; then
   else
     run_cmd bash "$CONFIG_ROOT/scripts/solace-setup-bash-prompt"
   fi
+fi
+
+if (( HYPR_NATIVE_FRESH )); then
+  if [[ $DRY_RUN -eq 1 ]]; then
+    log "DRY: would seed and verify reviewed modular native Lua for a new home only"
+  else
+    run_cmd python3 "$SCRIPT_DIR/../scripts/install-native-hypr-defaults.py"
+  fi
+else
+  log "Preserving existing Hyprland configuration; native migration is not automatic."
 fi
 
 log "Configs installed (or simulated in dry-run)"
